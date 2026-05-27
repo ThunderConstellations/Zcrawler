@@ -23,8 +23,8 @@ from webapp.app.schemas import (
 )
 
 BASE_DIR = Path(__file__).resolve().parents[2]
-TEMPLATES_DIR = BASE_DIR / "templates"
-STATIC_DIR = BASE_DIR / "static"
+TEMPLATES_DIR = BASE_DIR / "webapp" / "templates"
+STATIC_DIR = BASE_DIR / "webapp" / "static"
 
 app = FastAPI(title="Zcrawler Webapp")
 templates = Jinja2Templates(directory=str(TEMPLATES_DIR))
@@ -41,12 +41,12 @@ def on_startup() -> None:
 
 @app.get("/", response_class=HTMLResponse)
 def index(request: Request) -> HTMLResponse:
-    return templates.TemplateResponse("index.html", {"request": request})
+    return templates.TemplateResponse(request=request, name="index.html", context={})
 
 
 @app.get("/runs/{run_id}", response_class=HTMLResponse)
 def run_detail(request: Request, run_id: str) -> HTMLResponse:
-    return templates.TemplateResponse("run_detail.html", {"request": request, "run_id": run_id})
+    return templates.TemplateResponse(request=request, name="run_detail.html", context={"run_id": run_id})
 
 
 # --- Crawler Definitions ---

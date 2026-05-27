@@ -38,3 +38,6 @@ Based on existing open-source projects:
 - **Config-Driven Runner**: Refactored `crawler_runner.py` to use JSON configurations from definitions, enabling dynamic parameters for OSM-based crawls.
 - **Modern Dashboard**: Rebuilt the web UI with a dark theme, adding sections for managing crawler definitions, launching runs (ad-hoc or via definition), and viewing a summary of project statistics.
 - **Functional Verification**: Confirmed that the end-to-end flow (Definition -> Run -> Findings) works correctly via the FastAPI backend.
+
+- **Modern Run Details Page**: Overhauled `run_detail.html` with a consistent dark theme, dynamic status badges, and enhanced visualizations (400px height for maps/charts).
+- **Data Export Capability**: Added client-side CSV and JSON export features to the run details page, allowing users to easily download their findings.
