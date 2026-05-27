@@ -41,3 +41,5 @@ Based on existing open-source projects:
 
 - **Modern Run Details Page**: Overhauled `run_detail.html` with a consistent dark theme, dynamic status badges, and enhanced visualizations (400px height for maps/charts).
 - **Data Export Capability**: Added client-side CSV and JSON export features to the run details page, allowing users to easily download their findings.
+
+- **Documentation & Entry Point**: Created a `run.py` entry point at the root to resolve module path issues and updated `README.md` with comprehensive setup and usage guides.
