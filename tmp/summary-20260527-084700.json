@@ -1,4 +1,0 @@
-{
-  "summary": "Implemented a production-style local crawler script at scripts/valpo_business_crawler.py that uses free OpenStreetMap services (Nominatim + Overpass) to collect Valparaiso, Indiana businesses, extract name/phone/website/location/type, compute distance from 410 Glendale Blvd, and output sorted results in Markdown, CSV, and JSON. Added endpoint fallback and retry handling after Overpass 406 responses, then regenerated outputs successfully (523 records). Also created userinput.py and executed it in non-blocking mode, and resolved all linter issues across changed files.",
-  "current_status": "Business list generation is complete and repeatable via python scripts/valpo_business_crawler.py; outputs are available under output/ and sorted by proximity to the provided address."
-}

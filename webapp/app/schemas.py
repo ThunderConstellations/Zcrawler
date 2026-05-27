@@ -1,12 +1,36 @@
 from __future__ import annotations
 
 from datetime import datetime
-from typing import List, Optional
+from typing import Any, Dict, List, Optional
 
 from pydantic import BaseModel, Field
 
 
+class CrawlerDefinitionBase(BaseModel):
+    name: str
+    description: Optional[str] = None
+    template_key: str
+    config_json: str
+
+
+class CrawlerDefinitionCreate(CrawlerDefinitionBase):
+    pass
+
+
+class CrawlerDefinitionResponse(CrawlerDefinitionBase):
+    id: str
+    created_at: datetime
+    updated_at: datetime
+
+    class Config:
+        from_attributes = True
+
+
 class CreateRunRequest(BaseModel):
+    definition_id: Optional[str] = Field(
+        None, description="The ID of the crawler definition to run."
+    )
+    # Fields for ad-hoc or backward compatibility
     reference_address: str = Field(
         ..., description="Address used as distance anchor."
     )
@@ -23,6 +47,7 @@ class CreateRunRequest(BaseModel):
 
 class CrawlRunResponse(BaseModel):
     id: str
+    definition_id: Optional[str] = None
     template_key: str
     status: str
     reference_address: str
@@ -32,6 +57,9 @@ class CrawlRunResponse(BaseModel):
     completed_at: Optional[datetime] = None
     findings_count: int
     error_message: Optional[str] = None
+
+    class Config:
+        from_attributes = True
 
 
 class CrawlFindingResponse(BaseModel):
@@ -50,6 +78,9 @@ class CrawlFindingResponse(BaseModel):
     quality_score: int
     source: Optional[str] = None
     created_at: datetime
+
+    class Config:
+        from_attributes = True
 
 
 class RunResultsResponse(BaseModel):

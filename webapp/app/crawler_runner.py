@@ -1,39 +1,44 @@
 from __future__ import annotations
 # Run and persist crawls for Zcrawler webapp.
 
-# pylint: disable=import-error
-
-from datetime import datetime
 import json
 import subprocess
 import sys
+from datetime import datetime
 from pathlib import Path
 from typing import Any, Dict, List, Optional
 
 from sqlalchemy.orm import Session
 
 from webapp.app.logging_setup import setup_logging
-from webapp.app.models import CrawlFinding, CrawlRun
+from webapp.app.models import CrawlFinding, CrawlRun, CrawlerDefinition
 from webapp.app.schemas import CreateRunRequest
 
 logger = setup_logging()
 
 REPO_ROOT = Path(__file__).resolve().parents[2]
+STORAGE_DIR = REPO_ROOT / "webapp" / "storage"
 
 
 def _run_dir_for(run_id: str) -> Path:
-    return REPO_ROOT / "webapp" / "storage" / "runs" / run_id
+    return STORAGE_DIR / "runs" / run_id
 
 
-def _script_command_for_valpo(request: CreateRunRequest, run_dir: Path) -> List[str]:
+def _script_command_for_osm(request: CreateRunRequest, run_dir: Path, config: Dict[str, Any]) -> List[str]:
+    """Generate command for OSM-based crawler."""
     script_path = REPO_ROOT / "scripts" / "valpo_business_crawler.py"
+
+    # Use config overrides if available
+    reference_address = config.get("reference_address", request.reference_address)
+    city_query = config.get("city_query", request.city_query)
+
     cmd = [
         sys.executable,
         str(script_path),
         "--reference-address",
-        request.reference_address,
+        reference_address,
         "--city-query",
-        request.city_query,
+        city_query,
         "--output-dir",
         str(run_dir),
         "--max-reverse-geocode-lookups",
@@ -45,13 +50,17 @@ def _script_command_for_valpo(request: CreateRunRequest, run_dir: Path) -> List[
 
 
 def _load_findings(output_dir: Path) -> List[Dict[str, Any]]:
+    # The current script hardcodes the filename. We might need to change this if we generalize filenames.
     output_json = output_dir / "valparaiso_businesses.json"
+    if not output_json.exists():
+        logger.warning("Output JSON not found at %s", output_json)
+        return []
     payload = json.loads(output_json.read_text(encoding="utf-8"))
     return payload.get("businesses", [])
 
 
 def run_valpo_business_crawler(run_id: str, request: CreateRunRequest, db: Session) -> None:
-    """Execute the local Valparaiso OSM crawler and persist results."""
+    """Execute crawler and persist results."""
 
     run: Optional[CrawlRun] = db.get(CrawlRun, run_id)
     if run is None:
@@ -61,16 +70,25 @@ def run_valpo_business_crawler(run_id: str, request: CreateRunRequest, db: Sessi
     run_dir.mkdir(parents=True, exist_ok=True)
     log_path = run_dir / "run.log"
 
-    cmd = _script_command_for_valpo(request, run_dir)
-    params_json = request.model_dump_json()
+    # Get configuration from definition if available
+    config = {}
+    if run.definition_id:
+        definition = db.get(CrawlerDefinition, run.definition_id)
+        if definition and definition.config_json:
+            try:
+                config = json.loads(definition.config_json)
+            except json.JSONDecodeError:
+                logger.error("Failed to decode config_json for definition %s", run.definition_id)
 
-    run.params_json = params_json
-    run.reference_address = request.reference_address
-    run.city_query = request.city_query
+    # Determine command based on template_key
+    if run.template_key == "valpo_businesses" or run.template_key == "osm_business_crawler":
+        cmd = _script_command_for_osm(request, run_dir, config)
+    else:
+        raise RuntimeError(f"Unsupported template_key: {run.template_key}")
+
     run.log_path = str(log_path)
     run.started_at = datetime.utcnow()
     run.status = "running"
-    db.add(run)
     db.commit()
 
     try:

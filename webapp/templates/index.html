@@ -3,7 +3,7 @@
   <head>
     <meta charset="UTF-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-    <title>Zcrawler Runs</title>
+    <title>Zcrawler Dashboard</title>
     <link
       rel="stylesheet"
       href="https://cdn.jsdelivr.net/npm/tailwindcss@3.4.1/dist/tailwind.min.css"
@@ -12,146 +12,298 @@
       body {
         background: #0b1220;
         color: #e5e7eb;
+        font-family: ui-sans-serif, system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, "Helvetica Neue", Arial, "Noto Sans", sans-serif;
       }
       .card {
         background: rgba(17, 24, 39, 0.8);
         border: 1px solid rgba(255, 255, 255, 0.08);
         border-radius: 12px;
+        transition: all 0.2s ease;
+      }
+      .card:hover {
+        border-color: rgba(99, 102, 241, 0.4);
+      }
+      input, select, textarea {
+        background: #111827 !important;
+        border: 1px solid #374151 !important;
+        color: #f3f4f6 !important;
+      }
+      input:focus, select:focus, textarea:focus {
+        border-color: #6366f1 !important;
+        outline: none !important;
+        ring: 2px solid rgba(99, 102, 241, 0.2);
+      }
+      .btn-primary {
+        background: #4f46e5;
+        transition: background 0.2s;
+      }
+      .btn-primary:hover {
+        background: #4338ca;
       }
     </style>
   </head>
-  <body>
-    <div class="max-w-6xl mx-auto p-6">
-      <div class="flex items-start justify-between gap-4">
+  <body class="min-h-screen">
+    <div class="max-w-7xl mx-auto p-6 space-y-8">
+      <!-- Header -->
+      <header class="flex items-center justify-between">
         <div>
-          <h1 class="text-2xl font-semibold">Zcrawler</h1>
-          <p class="text-sm text-slate-300 mt-1">
-            Create runs, track progress, and view findings.
-          </p>
+          <h1 class="text-3xl font-bold text-white tracking-tight">Zcrawler</h1>
+          <p class="text-slate-400 mt-1">Automate your data extraction workflows.</p>
         </div>
-        <div class="text-right">
-          <div id="statusLine" class="text-sm text-slate-300">Loading…</div>
+        <div class="bg-slate-900 px-4 py-2 rounded-lg border border-slate-800">
+            <span id="statusLine" class="text-sm font-medium text-indigo-400 italic">Connecting...</span>
         </div>
-      </div>
+      </header>
 
-      <div class="grid grid-cols-1 md:grid-cols-2 gap-4 mt-6">
-        <div class="card p-4">
-          <h2 class="font-medium text-lg">Create new run</h2>
-          <form id="createRunForm" class="mt-4 space-y-3">
-            <div>
-              <label class="text-sm text-slate-300">Reference address</label>
-              <input
-                id="referenceAddress"
-                name="reference_address"
-                type="text"
-                class="mt-1 w-full bg-slate-900 border border-slate-700 rounded px-3 py-2"
-                value="410 Glendale Blvd, Valparaiso, Indiana 46383"
-              />
-            </div>
-            <div>
-              <label class="text-sm text-slate-300">City query</label>
-              <input
-                id="cityQuery"
-                name="city_query"
-                type="text"
-                class="mt-1 w-full bg-slate-900 border border-slate-700 rounded px-3 py-2"
-                value="Valparaiso, Indiana, USA"
-              />
-            </div>
-            <div class="flex items-center gap-3">
-              <input
-                id="enableReverseGeocode"
-                type="checkbox"
-                checked
-                class="h-4 w-4"
-              />
-              <label class="text-sm text-slate-300">Enable reverse geocode</label>
-            </div>
-            <div>
-              <label class="text-sm text-slate-300">Max reverse lookups</label>
-              <input
-                id="maxReverseGeocodeLookups"
-                type="number"
-                min="0"
-                max="50"
-                class="mt-1 w-full bg-slate-900 border border-slate-700 rounded px-3 py-2"
-                value="10"
-              />
+      <div class="grid grid-cols-1 xl:grid-cols-3 gap-8">
+        <!-- Left Column: Crawler Definitions -->
+        <div class="xl:col-span-2 space-y-8">
+          <section class="card p-6">
+            <div class="flex items-center justify-between mb-6">
+              <h2 class="text-xl font-semibold text-white">Crawler Definitions</h2>
+              <button onclick="toggleDefForm()" class="text-sm bg-indigo-600/20 text-indigo-300 px-3 py-1 rounded hover:bg-indigo-600/30 transition">
+                + New Definition
+              </button>
             </div>
 
-            <button
-              type="submit"
-              class="w-full py-2 rounded bg-indigo-600 hover:bg-indigo-500 font-medium"
-            >
-              Run crawler
-            </button>
-          </form>
+            <div id="defFormContainer" class="hidden mb-8 p-4 bg-slate-900/50 rounded-lg border border-slate-700 space-y-4">
+              <h3 class="font-medium">New Crawler Definition</h3>
+              <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
+                <div>
+                  <label class="block text-xs uppercase text-slate-500 font-bold mb-1">Name</label>
+                  <input id="defName" type="text" placeholder="e.g. Valpo Coffee Shops" class="w-full rounded px-3 py-2 text-sm">
+                </div>
+                <div>
+                  <label class="block text-xs uppercase text-slate-500 font-bold mb-1">Template</label>
+                  <select id="defTemplate" class="w-full rounded px-3 py-2 text-sm">
+                    <option value="osm_business_crawler">OSM Business Crawler</option>
+                  </select>
+                </div>
+              </div>
+              <div>
+                <label class="block text-xs uppercase text-slate-500 font-bold mb-1">Description</label>
+                <textarea id="defDesc" placeholder="Briefly describe what this crawler does..." class="w-full rounded px-3 py-2 text-sm h-20"></textarea>
+              </div>
+              <div>
+                <label class="block text-xs uppercase text-slate-500 font-bold mb-1">Config (JSON)</label>
+                <textarea id="defConfig" class="w-full rounded px-3 py-2 text-sm font-mono h-32" placeholder='{ "reference_address": "...", "city_query": "..." }'></textarea>
+              </div>
+              <div class="flex justify-end gap-3">
+                <button onclick="toggleDefForm()" class="px-4 py-2 text-sm text-slate-400 hover:text-white">Cancel</button>
+                <button onclick="saveDefinition()" class="btn-primary px-6 py-2 rounded text-sm font-semibold">Save Definition</button>
+              </div>
+            </div>
+
+            <div class="overflow-hidden">
+              <table class="w-full text-sm">
+                <thead>
+                  <tr class="text-left text-slate-500 border-b border-slate-800">
+                    <th class="pb-3 font-semibold uppercase tracking-wider">Name</th>
+                    <th class="pb-3 font-semibold uppercase tracking-wider">Template</th>
+                    <th class="pb-3 font-semibold uppercase tracking-wider">Created</th>
+                    <th class="pb-3 text-right">Actions</th>
+                  </tr>
+                </thead>
+                <tbody id="defTbody" class="divide-y divide-slate-800">
+                  <!-- Definitions dynamic -->
+                </tbody>
+              </table>
+            </div>
+          </section>
+
+          <section class="card p-6">
+            <h2 class="text-xl font-semibold text-white mb-6">Execution History</h2>
+            <div class="overflow-hidden">
+              <table class="w-full text-sm">
+                <thead>
+                  <tr class="text-left text-slate-500 border-b border-slate-800">
+                    <th class="pb-3 font-semibold uppercase tracking-wider">Run ID</th>
+                    <th class="pb-3 font-semibold uppercase tracking-wider">Status</th>
+                    <th class="pb-3 font-semibold uppercase tracking-wider">Findings</th>
+                    <th class="pb-3 font-semibold uppercase tracking-wider">Date</th>
+                    <th class="pb-3 text-right">Actions</th>
+                  </tr>
+                </thead>
+                <tbody id="runsTbody" class="divide-y divide-slate-800">
+                  <!-- Runs dynamic -->
+                </tbody>
+              </table>
+            </div>
+          </section>
         </div>
 
-        <div class="card p-4">
-          <h2 class="font-medium text-lg">Recent runs</h2>
-          <div class="mt-3 overflow-auto">
-            <table class="w-full text-sm">
-              <thead class="text-slate-400">
-                <tr class="text-left">
-                  <th class="py-2 pr-2">Status</th>
-                  <th class="py-2 pr-2">Findings</th>
-                  <th class="py-2 pr-2">Created</th>
-                  <th class="py-2">Action</th>
-                </tr>
-              </thead>
-              <tbody id="runsTbody" class="divide-y divide-slate-800"></tbody>
-            </table>
-          </div>
+        <!-- Right Column: Quick Actions -->
+        <div class="space-y-8">
+          <section class="card p-6">
+            <h2 class="text-xl font-semibold text-white mb-6">Launch Crawler</h2>
+            <form id="createRunForm" class="space-y-4">
+              <div>
+                <label class="block text-xs uppercase text-slate-500 font-bold mb-1">Select Definition (Optional)</label>
+                <select id="runDefId" class="w-full rounded px-3 py-2 text-sm">
+                  <option value="">-- Ad-hoc Run --</option>
+                  <!-- Definitions dynamic -->
+                </select>
+              </div>
+
+              <div id="adhocFields" class="space-y-4 pt-4 border-t border-slate-800">
+                <div>
+                  <label class="block text-xs uppercase text-slate-500 font-bold mb-1">Reference Address</label>
+                  <input id="referenceAddress" type="text" value="410 Glendale Blvd, Valparaiso, IN" class="w-full rounded px-3 py-2 text-sm">
+                </div>
+                <div>
+                  <label class="block text-xs uppercase text-slate-500 font-bold mb-1">City Query</label>
+                  <input id="cityQuery" type="text" value="Valparaiso, Indiana, USA" class="w-full rounded px-3 py-2 text-sm">
+                </div>
+              </div>
+
+              <div class="grid grid-cols-2 gap-4">
+                  <div class="flex items-center gap-2">
+                    <input id="enableReverseGeocode" type="checkbox" checked class="h-4 w-4 bg-slate-900 border-slate-700 rounded text-indigo-600 focus:ring-indigo-600">
+                    <label class="text-xs text-slate-400">Reverse Geocode</label>
+                  </div>
+                  <div>
+                    <label class="block text-[10px] uppercase text-slate-600 font-bold">Max Lookups</label>
+                    <input id="maxReverseGeocodeLookups" type="number" value="10" class="w-full rounded px-2 py-1 text-xs mt-1">
+                  </div>
+              </div>
+
+              <button type="submit" class="w-full py-3 btn-primary rounded-lg font-bold text-lg shadow-lg shadow-indigo-500/20">
+                Execute Run
+              </button>
+            </form>
+          </section>
+
+          <section class="card p-6 bg-indigo-600/5 border-indigo-500/20">
+            <h3 class="text-indigo-300 font-bold text-sm uppercase mb-3">Project Statistics</h3>
+            <div class="grid grid-cols-2 gap-4">
+              <div>
+                <p class="text-slate-500 text-xs">Total Runs</p>
+                <p id="statTotalRuns" class="text-2xl font-bold text-white">0</p>
+              </div>
+              <div>
+                <p class="text-slate-500 text-xs">Findings Count</p>
+                <p id="statFindings" class="text-2xl font-bold text-white">0</p>
+              </div>
+            </div>
+          </section>
         </div>
       </div>
     </div>
 
     <script>
-      function renderRuns(runs) {
-        const tbody = document.getElementById("runsTbody");
-        tbody.innerHTML = "";
-        for (const run of runs) {
-          const tr = document.createElement("tr");
-          tr.className = "";
+      function toggleDefForm() {
+        const container = document.getElementById('defFormContainer');
+        container.classList.toggle('hidden');
+      }
 
-          const statusColor =
-            run.status === "completed"
-              ? "text-emerald-300"
-              : run.status === "failed"
-              ? "text-red-300"
-              : run.status === "running"
-              ? "text-amber-300"
-              : "text-slate-300";
-
-          tr.innerHTML = `
-            <td class="py-2 pr-2">
-              <span class="${statusColor} font-medium">${run.status}</span>
-            </td>
-            <td class="py-2 pr-2">${run.findings_count ?? 0}</td>
-            <td class="py-2 pr-2">${new Date(run.created_at).toLocaleString()}</td>
-            <td class="py-2">
-              <a class="text-indigo-300 hover:text-indigo-200 underline" href="/runs/${run.id}">View</a>
-            </td>
-          `;
-          tbody.appendChild(tr);
+      async function saveDefinition() {
+        const body = {
+          name: document.getElementById('defName').value,
+          description: document.getElementById('defDesc').value,
+          template_key: document.getElementById('defTemplate').value,
+          config_json: document.getElementById('defConfig').value,
+        };
+        const res = await fetch('/api/definitions', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify(body),
+        });
+        if (res.ok) {
+          toggleDefForm();
+          fetchData();
+        } else {
+          alert('Failed to save definition');
         }
       }
 
-      async function fetchRuns() {
-        const res = await fetch("/api/runs");
-        if (!res.ok) throw new Error("Failed fetching runs");
-        const runs = await res.json();
-        renderRuns(runs);
-        const last = runs[0];
-        document.getElementById("statusLine").textContent = last
-          ? `Latest: ${last.status} (${last.findings_count ?? 0} findings)`
-          : "No runs yet.";
+      function renderDefinitions(defs) {
+        const tbody = document.getElementById('defTbody');
+        const select = document.getElementById('runDefId');
+        tbody.innerHTML = '';
+
+        // Preserve "Ad-hoc" option
+        select.innerHTML = '<option value="">-- Ad-hoc Run --</option>';
+
+        defs.forEach(def => {
+          const tr = document.createElement('tr');
+          tr.innerHTML = `
+            <td class="py-4">
+              <div class="font-medium text-white">${def.name}</div>
+              <div class="text-xs text-slate-500">${def.description || 'No description'}</div>
+            </td>
+            <td class="py-4 text-slate-400 font-mono text-xs">${def.template_key}</td>
+            <td class="py-4 text-slate-500 text-xs">${new Date(def.created_at).toLocaleDateString()}</td>
+            <td class="py-4 text-right">
+              <button onclick="loadDefIntoRun('${def.id}')" class="text-indigo-400 hover:text-indigo-300 text-xs font-semibold">Use</button>
+            </td>
+          `;
+          tbody.appendChild(tr);
+
+          const opt = document.createElement('option');
+          opt.value = def.id;
+          opt.textContent = def.name;
+          select.appendChild(opt);
+        });
+      }
+
+      async function loadDefIntoRun(id) {
+        document.getElementById('runDefId').value = id;
+        // Optional: populate ad-hoc fields with def config if needed
+      }
+
+      function renderRuns(runs) {
+        const tbody = document.getElementById("runsTbody");
+        tbody.innerHTML = "";
+        let totalFindings = 0;
+
+        runs.forEach(run => {
+          totalFindings += (run.findings_count || 0);
+          const tr = document.createElement("tr");
+          const statusColors = {
+            'completed': 'bg-emerald-500/10 text-emerald-400 border-emerald-500/20',
+            'failed': 'bg-red-500/10 text-red-400 border-red-500/20',
+            'running': 'bg-amber-500/10 text-amber-400 border-amber-500/20',
+            'queued': 'bg-slate-500/10 text-slate-400 border-slate-500/20'
+          };
+          const colorClass = statusColors[run.status] || statusColors['queued'];
+
+          tr.innerHTML = `
+            <td class="py-4 font-mono text-xs text-slate-400">${run.id.substring(0,8)}...</td>
+            <td class="py-4">
+              <span class="px-2 py-0.5 rounded border text-[10px] font-bold uppercase ${colorClass}">${run.status}</span>
+            </td>
+            <td class="py-4 font-medium text-slate-300">${run.findings_count ?? 0}</td>
+            <td class="py-4 text-xs text-slate-500">${new Date(run.created_at).toLocaleString()}</td>
+            <td class="py-4 text-right">
+              <a class="text-indigo-400 hover:text-indigo-300 font-semibold text-xs" href="/runs/${run.id}">Details</a>
+            </td>
+          `;
+          tbody.appendChild(tr);
+        });
+
+        document.getElementById('statTotalRuns').textContent = runs.length;
+        document.getElementById('statFindings').textContent = totalFindings;
+
+        if (runs.length > 0) {
+            document.getElementById("statusLine").textContent = `Latest: ${runs[0].status} (${runs[0].findings_count} findings)`;
+        } else {
+            document.getElementById("statusLine").textContent = "Ready";
+        }
+      }
+
+      async function fetchData() {
+        const [defsRes, runsRes] = await Promise.all([
+          fetch('/api/definitions'),
+          fetch('/api/runs')
+        ]);
+        if (defsRes.ok) renderDefinitions(await defsRes.json());
+        if (runsRes.ok) renderRuns(await runsRes.json());
       }
 
       document.getElementById("createRunForm").addEventListener("submit", async (e) => {
         e.preventDefault();
         const body = {
+          definition_id: document.getElementById("runDefId").value || null,
           reference_address: document.getElementById("referenceAddress").value,
           city_query: document.getElementById("cityQuery").value,
           enable_reverse_geocode: document.getElementById("enableReverseGeocode").checked,
@@ -163,17 +315,26 @@
           headers: { "Content-Type": "application/json" },
           body: JSON.stringify(body),
         });
-        const data = await res.json();
-        if (!res.ok) {
-          alert(data?.detail || "Failed to create run");
-          return;
+        if (res.ok) {
+          const data = await res.json();
+          window.location.href = `/runs/${data.id}`;
+        } else {
+          alert("Failed to launch run");
         }
-        window.location.href = `/runs/${data.id}`;
       });
 
-      fetchRuns();
-      setInterval(fetchRuns, 5000);
+      // Show/hide ad-hoc fields based on selection
+      document.getElementById('runDefId').addEventListener('change', (e) => {
+          const adhoc = document.getElementById('adhocFields');
+          if (e.target.value) {
+              adhoc.classList.add('opacity-30', 'pointer-events-none');
+          } else {
+              adhoc.classList.remove('opacity-30', 'pointer-events-none');
+          }
+      });
+
+      fetchData();
+      setInterval(fetchData, 5000);
     </script>
   </body>
 </html>
-
