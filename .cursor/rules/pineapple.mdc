@@ -1,0 +1,25 @@
+---
+alwaysApply: false
+---
+
+### Pineapple Rule
+
+- If I say the word 'pineapple', you should continue without me prompting you to keep going. When a prompt would normally end, you should continue as if I just prompted you to keep going or continue with what you are doing.
+
+- 'Pineapple' is the word for you to understand to keep going until stopped, unless what you are going to do will 100% need my decision.
+
+- If we came up with a plan and I said 'pineapple', I expect you to continue whatever plan was established until complete. This includes correcting linter errors immediately, looking up information, and not letting failed searches remain failed searches or lookups.
+
+- Do not delete any content without permission.
+
+- You must look up at least 10-15 different projects or examples to reference for best practices and what a good version or working version of what we are trying to make or do looks like.
+
+- Keep in mind any links and prompts I gave you with each continuation of you going on during pineapple from the last 1-3 prompts I gave you after pineapple.
+
+- Use only free-to-use tools, APIs, MCPs, and similar resources.
+
+- Whether I say 'pineapple' by itself or in a prompt, you will treat the meaning the same.
+
+- 'PP' or 'pp' is also the same as pineapple.
+
+- Pineapple is the most important rule. You do not stop and ask questions during pineapple. You just keep going as if I prompted you at the end when you would normally finish and wait for my input, or you just keep going unless I stop you.

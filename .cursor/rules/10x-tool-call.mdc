@@ -1,0 +1,116 @@
+---
+description: Automated task progression loop using stored context from userinput.py with both interactive and automated modes
+globs:
+alwaysApply: true
+---
+
+### ✅ Task: Interactive and Automated Task Progression with Context Persistence
+
+1. **Check if `userinput.py` exists** in the root directory.
+
+   - If it doesn't exist, create it with the automated content (see below).
+
+2. **Interactive Workflow** (Default Mode):
+
+   - Perform your assigned tasks.
+
+   - Run:
+
+     ```bash
+     python userinput.py
+     ```
+
+   - The terminal should be opened in the chat window itself.
+
+   - Read the user's input.
+
+   - Based on the input, perform the next set of tasks.
+
+   - Repeat the process.
+
+3. **Automated Workflow** (Context Persistence Mode):
+
+   - Perform your assigned tasks.
+
+   - Run:
+
+     ```bash
+     python userinput.py
+     ```
+
+   - The script automatically loads and uses the last stored prompt context.
+
+   - Read the automated prompt output (no human interaction required).
+
+   - Based on the output, continue with contextual task progression.
+
+   - Repeat the process autonomously.
+
+4. **Context Management**:
+
+   - Last prompt is stored in `tmp/last_prompt.txt`
+   - Prompt history is maintained in `tmp/prompt_history.txt`
+   - Default context: "continue with previous task context and improve the codebase"
+
+5. **Exit Conditions**:
+
+   - **Interactive Mode**: If the user enters `"stop"` when prompted, exit the loop and terminate the process.
+   - **Automated Mode**: The loop continues automatically until explicitly stopped by external intervention.
+
+6. **Auto-Generated userinput.py Content**:
+
+```python
+# userinput.py
+import os
+from datetime import datetime
+
+# Ensure tmp directory exists
+os.makedirs("tmp", exist_ok=True)
+
+LAST_PROMPT_FILE = "tmp/last_prompt.txt"
+PROMPT_HISTORY_FILE = "tmp/prompt_history.txt"
+
+def load_last_prompt():
+    """Load the last prompt from storage"""
+    if os.path.exists(LAST_PROMPT_FILE):
+        with open(LAST_PROMPT_FILE, 'r', encoding='utf-8') as f:
+            return f.read().strip()
+    return "continue with previous task context and improve the codebase"
+
+def save_prompt(prompt):
+    """Save prompt to storage and history"""
+    # Save as last prompt
+    with open(LAST_PROMPT_FILE, 'w', encoding='utf-8') as f:
+        f.write(prompt)
+
+    # Append to history with timestamp
+    timestamp = datetime.now().strftime("%Y-%m-%d %H:%M:%S")
+    with open(PROMPT_HISTORY_FILE, 'a', encoding='utf-8') as f:
+        f.write(f"[{timestamp}] {prompt}\n")
+
+def get_automated_prompt():
+    """Get prompt automatically - always use last stored prompt for automation"""
+    last_prompt = load_last_prompt()
+    print(f"prompt: (auto-continuing with: {last_prompt})")
+    return last_prompt
+
+def get_interactive_prompt():
+    """Get prompt from user input"""
+    return input("prompt: ")
+
+# Main execution
+if __name__ == "__main__":
+    # Check for automation mode (if tmp/last_prompt.txt exists and is not empty)
+    if os.path.exists(LAST_PROMPT_FILE) and os.path.getsize(LAST_PROMPT_FILE) > 0:
+        # Automated mode
+        user_input = get_automated_prompt()
+    else:
+        # Interactive mode
+        user_input = get_interactive_prompt()
+
+    # Save the prompt for next iteration
+    save_prompt(user_input)
+
+    # Output the prompt for the AI to process
+    print(user_input)
+```

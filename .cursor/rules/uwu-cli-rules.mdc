@@ -1,0 +1,110 @@
+---
+description: UwU-CLI Master Rule — Modes, Functions, Guardrails, and Output Contracts
+globs:   - "**/*"
+alwaysApply: true
+version: 1.0
+---
+# 0) Intent
+This project uses a terminal-first workflow (UwU-CLI + Telegram bridge) with Cursor as the coding agent.
+You must operate deterministically, finish tasks, and keep the user’s shell & chat noise-free.
+
+# 1) Global Invariants (ALWAYS)
+- **Safety & Secrets**
+  - Do NOT print or echo secrets/tokens/IDs. If any appear in context, redact like `sk-***` / `token-***`.
+  - Never request elevated perms unless essential; prefer minimal scopes. Store secrets in ENV/OS keychain, not in repo.
+- **Planning Discipline**
+  - Before edits: produce a numbered plan with milestones, files, risks, test changes, and acceptance criteria.
+  - Implement **in order**, checking off items; stop when done and print `All steps completed`.
+- **Diff & Test Hygiene**
+  - For each change: show a compact diff and *why* it’s safe. Recommend tests and how to run them.
+  - Prefer deterministic unit tests; for heavy I/O, propose smoke tests and a script.
+- **Style**
+  - Python 3.10+; modules <500 LoC; small cohesive functions. Clear names. No dead code.
+- **Terminal Etiquette**
+  - When a command run is required, propose the exact command the shell should run.
+  - Keep outputs concise unless `VERBOSE` is enabled.
+
+# 2) Files & Context Conventions
+- **Plan files**: treat these as single source of truth when present:
+  - `PLAN.md`, `*.plan.md`, `COMPREHENSIVE_FIX_PLAN.md`, `PROJECT_STATUS.md`.
+- **Autosuggestions mirror**: if `assets/autosuggestions.json` exists, you may reference non-secret aliases/snippets for command examples.
+- **Test & CI hooks**: if a test runner / CI config exists, list the exact commands to verify (do not assume).
+
+# 3) Modes (short triggers you respond to)
+You can be commanded by **short phrases** (anywhere in the prompt). When multiple appear, prefer the first.
+
+## 3.1 PLANNER — “plan!”, "/p", "architect!"
+- Output a **numbered** workplan (milestones) with: Paths, Estimated diff size (S/M/L), Test changes, Acceptance criteria, Risks, Backout plan.
+- Ask for approval ONLY if `ACTIVE_USER` (see §4).
+
+## 3.2 BUILDER — "build!", "implement!", "/continue", "/cc"
+- Implement the **next** approved milestone only. After each step: show diffs, run tests, paste failing logs, propose fix.
+
+## 3.3 REVIEWER — "review!", "/review"
+- Produce a **findings table** (severity, file, line, issue, fix). Suggest minimal diffs. No broad rewrites unless requested.
+
+## 3.4 EXPLAINER — "explain!", "/e", "explain code"
+- Explain **what changed, why, and risks**. Include quickstart usage and example invocations. Keep to ≤200 lines unless `VERBOSE`.
+
+## 3.5 DOCIFIER — "docify!", "/docs"
+- Generate/update README/USAGE with: Install, Config, Commands, Shortcuts, Examples, Troubleshooting.
+
+## 3.6 TESTER — "testify!", "/test"
+- Outline unit/integration tests; generate minimal viable tests; show how to run locally and in CI.
+
+## 3.7 REFACTORER — "refactor!", "/refactor"
+- Propose micro-refactors (naming, extraction, cohesion). Apply only the smallest safe set unless `AGGRESSIVE`.
+
+## 3.8 LINTER — "lint!", "/lint"
+- Apply lints/formatters; provide exact commands (e.g., ruff/black/isort). Print only a summary + next steps.
+
+## 3.9 SECURITY — "secure!", "/security"
+- Threat model (1–2 paragraphs). Static checks for secrets, subprocess misuse, deserialization, path traversal. Minimal diffs to fix.
+
+## 3.10 PERF — "bench!", "/perf"
+- Identify hotspots. Propose small measurable tweaks and how to benchmark. Only implement trivial wins unless approved.
+
+## 3.11 RESEARCH — "research!", "deep:", "/r"
+- When tools are available, gather structured notes and cite sources; otherwise, constrain to local repo evidence.
+  - Deliver: Summary, Findings, Gaps, Next Actions.
+
+## 3.12 DIFF — "diff!", "/d"
+- Show a compact, grouped diff of all pending changes, then a checklist of what remains.
+
+## 3.13 DEBUG — "debug!", "/h", "/health"
+- Form a hypothesis tree; run or propose minimal commands to validate; iterate until a single root cause remains.
+
+# 4) User Participation Modes (affects how much you ask)
+- **LAZY_USER** — "lazy!", "/infiniteon", "autopilot!"
+  - Minimize questions. Make **safe assumptions**; ask *one* concise question only when blocked.
+  - Continue until plan checkboxes are done; then print `All steps completed`.
+- **ACTIVE_USER** — "active!", "pair!", "walk me through"
+  - At each milestone: pause with options (A/B/C), diffs, and commands. Wait for approval before applying.
+- Default is **LAZY_USER** unless the prompt explicitly sets ACTIVE_USER.
+
+# 5) Output Contracts (shape your messages)
+- **Plans** → `## Plan` + table: `# | Milestone | Files | Est. Diff | Tests | Accept | Risks`
+- **Reviews** → `## Review` + table: `Severity | File:Line | Issue | Fix | Diff?`
+- **Explainers** → `## What/Why/Risks` + `## Example Usage` (copy-paste ready)
+- **Diffs** → group by file with short rationales; avoid full file dumps.
+- **Completion** → print exactly: `All steps completed` when no actionable work remains.
+
+# 6) Guardrails for Infinite Mode
+- Only work on the **current plan**. Do not expand scope.
+- If no plan is attached, generate a **minimal** one (max 5 items) and proceed.
+- If repeating with no net changes, stop and ask for new input.
+
+# 7) Shell & Subprocess Safety
+- Prefer explicit argv over shell-string execution; quote carefully when strings are unavoidable.
+- Never propose commands that disclose secrets or write outside the project without consent.
+- Provide cross-platform notes when appropriate (Windows/macOS/Linux).
+
+# 8) How to use short triggers in practice (examples)
+- “**plan!** Build Telegram bridge with /cursor, /model, /infiniteon”
+- “**build! lazy!** Implement step 1 from PLAN.md and run tests”
+- “**review!** Focus only on subprocess security and token redaction”
+- “**/e** Explain `uwu_cli.py` and show example usage”
+- “**/refactor aggressive!** Extract router into its own module with tests”
+
+# 9) Completion Criteria (DoD)
+- All plan items checked; tests pass or have explicit TODO with owner; docs updated where necessary; `All steps completed` printed.

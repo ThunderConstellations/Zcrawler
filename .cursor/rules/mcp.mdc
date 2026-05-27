@@ -1,0 +1,177 @@
+---
+description: "MCP Servers Usage Rules and Guidelines"
+globs:
+alwaysApply: true
+---
+
+### MCP Servers Usage Rules
+
+## Supabase MCP Server
+
+### WHEN to use:
+
+- During database operations (queries, mutations)
+- When handling user authentication
+- When working with real-time subscriptions
+- When managing storage operations
+
+### HOW to use:
+
+- Always use in read-only mode for queries
+- Use with proper error handling
+- Include retry logic for network failures
+- Log all database operations for debugging
+
+## PostgREST MCP Server
+
+### WHEN to use:
+
+- For REST API operations
+- When needing direct database access
+- For complex queries that need SQL optimization
+- When working with custom database views
+
+### HOW to use:
+
+- Always validate input parameters
+- Use proper HTTP methods (GET, POST, etc.)
+- Include proper authorization headers
+- Cache responses when appropriate
+
+## Browser Tools Server
+
+### WHEN to use:
+
+- During development and debugging
+- When investigating network issues
+- When analyzing performance
+- For capturing console logs
+
+### HOW to use:
+
+- Monitor all network requests
+- Capture and analyze console logs
+- Take screenshots for visual debugging
+- Track performance metrics
+
+## TypeScript ESLint Server
+
+### WHEN to use:
+
+- During TypeScript development
+- When checking code quality
+- Before committing code
+- During code reviews
+
+### HOW to use:
+
+- Run linting on save
+- Follow strict TypeScript rules
+- Enforce consistent code style
+- Fix auto-fixable issues automatically
+
+## Remotion Server
+
+### WHEN to use:
+
+- When creating programmatic videos
+- For complex animations
+- When rendering React components to video
+- For creating visual content
+
+### HOW to use:
+
+- Use composition API for complex animations
+- Optimize render performance
+- Handle audio synchronization
+- Manage frame-by-frame rendering
+
+## React Navigation Server
+
+### WHEN to use:
+
+- When implementing navigation
+- For route management
+- During deep linking setup
+- For navigation state debugging
+
+### HOW to use:
+
+- Follow navigation best practices
+- Use type-safe route names
+- Handle navigation events
+- Manage navigation state properly
+
+## General Rules for All MCP Servers
+
+1. Error Handling:
+
+   - Always implement proper error boundaries
+   - Log errors with context
+   - Provide user-friendly error messages
+   - Include error recovery mechanisms
+
+2. Performance:
+
+   - Monitor server response times
+   - Implement caching where appropriate
+   - Optimize resource usage
+   - Follow performance best practices
+
+3. Security:
+
+   - Use secure connections (HTTPS)
+   - Implement proper authentication
+   - Validate all inputs
+   - Follow security best practices
+
+4. Development Workflow:
+
+   - Use version control
+   - Document all server interactions
+   - Write tests for critical paths
+   - Review logs regularly
+
+5. Maintenance:
+   - Keep dependencies updated
+   - Monitor server health
+   - Clean up unused resources
+   - Maintain documentation
+
+## Integration Rules
+
+1. Server Communication:
+
+   - Use typed interfaces
+   - Handle connection states
+   - Implement retry logic
+   - Monitor connection health
+
+2. Data Flow:
+
+   - Follow unidirectional data flow
+   - Implement proper state management
+   - Handle data synchronization
+   - Cache appropriately
+
+3. Error Boundaries:
+
+   - Implement at component level
+   - Handle server errors gracefully
+   - Provide fallback UI
+   - Log errors for debugging
+
+4. Testing:
+
+   - Write unit tests
+   - Implement integration tests
+   - Test error scenarios
+   - Verify server interactions
+
+5. Monitoring:
+
+   - Track server usage
+   - Monitor performance metrics
+   - Log important events
+
+   - Set up alerts for issues

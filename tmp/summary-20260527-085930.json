@@ -1,0 +1,4 @@
+{
+  "summary": "Researched open-source crawler management and visual workflow repos suitable for evolving Zcrawler into a full webapp platform, including Crawlab, Gerapy, ScrapydWeb, Crawlee (TS/Python), Crawl4AI, Open Agent Builder, and n8n. Added a new research document at docs/crawler-webapp-research.md with repo examples, fit/gap analysis, recommended architecture, feature mapping to requested capabilities, phased implementation strategy, and operational/data policy guidance.",
+  "current_status": "Zcrawler now includes a concrete webapp transformation research blueprint; next implementation step is Phase 1 (FastAPI + Next.js run management around current crawler with persistent run history and findings UI)."
+}
