@@ -1,4 +1,0 @@
-{
-  "summary": "Researched web crawler architecture, RFC 9309 robots compliance, URL normalization, deduplication (Bloom/SimHash), politeness, scaling patterns, ethics, and observability. Created docs/building-a-good-crawler.md as the canonical Zcrawler reference guide with architecture diagrams, checklists, implementation ladder (prototype → Scrapy → distributed), and Zcrawler-specific production checklist.",
-  "current_status": "Zcrawler repo is greenfield (config only). Primary deliverable: docs/building-a-good-crawler.md ready for future implementation reference."
-}

@@ -1,4 +1,0 @@
-{
-  "summary": "Researched practical crawler quality improvements for OpenStreetMap-based business extraction (targeted Overpass filtering, richer contact fields, data-quality ranking, and rate-safe address enrichment) and implemented them in scripts/valpo_business_crawler.py. The crawler now uses business-focused tag filters, captures email/opening_hours, normalizes contact fields, computes a quality score, enriches nearby missing addresses via limited reverse geocoding, and writes a change log at output/crawler_improvements_applied.md. Regenerated outputs successfully and validated no linter errors.",
-  "current_status": "Improved crawler is operational and produced a cleaner Valparaiso business dataset (383 records) in output/valparaiso_businesses.md/csv/json, sorted by proximity with enhanced detail and traceability."
-}

@@ -1,4 +1,0 @@
-{
-  "current_status": "Crawler webapp Phase 1 skeleton is in place under webapp/ with endpoints and UI, and the crawler can be executed as part of runs. Existing dataset outputs are still generated via the script.",
-  "summary": "Researched existing crawler-management and workflow repos, then continued into Phase 1 by scaffolding a minimal FastAPI webapp. Added/extended the Valparaiso OSM crawler to support CLI params, and created webapp backend + HTML UI templates that let users create crawl runs, track run status, and view results with table + distance histogram + map. Fixed crawler runner for proper pathing and log capture, and cleaned up linter ERROR-level issues for the webapp backend. Next step: document and run the webapp (pip install + uvicorn) and add custom crawler builder capabilities."
-}

@@ -11,16 +11,41 @@ class Base(DeclarativeBase):
     pass
 
 
-def new_run_id() -> str:
-    """Generate a run id suitable for URLs and DB keys."""
+def new_id() -> str:
+    """Generate a unique id suitable for URLs and DB keys."""
 
     return str(uuid.uuid4())
+
+
+class CrawlerDefinition(Base):
+    __tablename__ = "crawler_definitions"
+
+    id: Mapped[str] = mapped_column(String(36), primary_key=True, default=new_id)
+    name: Mapped[str] = mapped_column(String(100), index=True)
+    description: Mapped[str | None] = mapped_column(Text, nullable=True)
+
+    template_key: Mapped[str] = mapped_column(String(100), index=True)
+    config_json: Mapped[str] = mapped_column(Text)
+
+    created_at: Mapped[datetime] = mapped_column(
+        DateTime, default=datetime.utcnow
+    )
+    updated_at: Mapped[datetime] = mapped_column(
+        DateTime, default=datetime.utcnow, onupdate=datetime.utcnow
+    )
+
+    runs: Mapped[list["CrawlRun"]] = relationship(
+        back_populates="definition", cascade="all, delete-orphan"
+    )
 
 
 class CrawlRun(Base):
     __tablename__ = "crawl_runs"
 
     id: Mapped[str] = mapped_column(String(36), primary_key=True)
+    definition_id: Mapped[str | None] = mapped_column(
+        String(36), ForeignKey("crawler_definitions.id", ondelete="SET NULL"), nullable=True
+    )
     template_key: Mapped[str] = mapped_column(String(100), index=True)
 
     status: Mapped[str] = mapped_column(String(30), index=True)
@@ -41,6 +66,7 @@ class CrawlRun(Base):
     started_at: Mapped[datetime | None] = mapped_column(DateTime, nullable=True)
     completed_at: Mapped[datetime | None] = mapped_column(DateTime, nullable=True)
 
+    definition: Mapped[CrawlerDefinition | None] = relationship(back_populates="runs")
     findings: Mapped[list["CrawlFinding"]] = relationship(
         back_populates="run", cascade="all, delete-orphan"
     )
