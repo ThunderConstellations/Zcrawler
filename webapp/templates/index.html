@@ -108,14 +108,13 @@
         if (!document.getElementById('advancedConfig').classList.contains('hidden')) { try { config = JSON.parse(document.getElementById('defConfig').value); } catch(e) { return alert('Invalid JSON'); } }
         else if (t === 'osm_business_crawler') config = { categories: document.getElementById('confCategories').value, city_query: document.getElementById('confCity').value, radius_mi: parseFloat(document.getElementById('confRadius').value), limit: parseInt(document.getElementById('confLimit').value) };
         else config = { url: document.getElementById('confUrl').value };
-
         const body = { name: document.getElementById('defName').value, description: document.getElementById('defDesc').value, template_key: t, config_json: JSON.stringify(config) };
         const res = await fetch(id ? `/api/definitions/${id}` : '/api/definitions', { method: id ? 'PUT' : 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(body) });
         if (res.ok) { toggleDefForm(); fetchData(); }
       }
 
-      async function deleteDef(id) { if (confirm('Delete definition?')) { await fetch(`/api/definitions/${id}`, { method: 'DELETE' }); fetchData(); } }
-      async function deleteRun(id) { if (confirm('Delete run?')) { await fetch(`/api/runs/${id}`, { method: 'DELETE' }); fetchData(); } }
+      async function deleteDef(id) { if (confirm('Delete definition?')) { const res = await fetch(`/api/definitions/${id}`, { method: 'DELETE' }); if (res.ok) fetchData(); else alert('Failed to delete'); } }
+      async function deleteRun(id) { if (confirm('Delete run?')) { const res = await fetch(`/api/runs/${id}`, { method: 'DELETE' }); if (res.ok) fetchData(); else alert('Failed to delete'); } }
       function editDef(id) {
           const d = definitions.find(x => x.id === id); if (!d) return;
           clearForm(); document.getElementById('defFormContainer').classList.remove('hidden');
@@ -168,7 +167,6 @@
         const res = await fetch("/api/runs", { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify(body) });
         if (res.ok) { const d = await res.json(); window.location.href = `/runs/${d.id}`; }
       });
-
       document.getElementById('runDefId').addEventListener('change', (e) => document.getElementById('adhocFields').classList.toggle('opacity-30', !!e.target.value));
       fetchData(); setInterval(fetchData, 10000);
     </script>

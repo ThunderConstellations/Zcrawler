@@ -4,6 +4,7 @@ from __future__ import annotations
 import json
 import subprocess
 import sys
+import shlex
 from datetime import datetime
 from pathlib import Path
 from typing import Any, Dict, List, Optional
@@ -113,6 +114,6 @@ def run_osm_business_crawler(run_id: str, request: CreateRunRequest, db: Session
         run.findings_count, run.status, run.completed_at = len(findings), "completed", datetime.utcnow()
         db.commit()
     except Exception as exc:
-        run.status, run.error_message, run.completed_at = "failed", str(exc), datetime.utcnow()
+        run.status, run.error_message, run.completed_at = "failed", f"{type(exc).__name__}: {exc}", datetime.utcnow()
         logger.error("Run failed: %s", exc, exc_info=True)
         db.commit()

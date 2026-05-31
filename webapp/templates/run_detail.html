@@ -54,7 +54,6 @@
 
       <!-- Main Analytics Section -->
       <div class="grid grid-cols-1 lg:grid-cols-4 gap-6">
-          <!-- Stats Column -->
           <div class="space-y-4">
               <div class="card p-4">
                   <p class="text-xs font-bold text-slate-500 uppercase">Findings</p>
@@ -69,8 +68,6 @@
                   <p id="statTemplate" class="text-xs font-mono text-slate-300 mt-2 truncate">...</p>
               </div>
           </div>
-
-          <!-- Charts -->
           <div class="lg:col-span-3 grid grid-cols-1 md:grid-cols-2 gap-6">
               <div class="card p-6">
                   <h3 class="text-sm font-bold text-slate-400 uppercase mb-4">Business Types</h3>
@@ -83,7 +80,6 @@
           </div>
       </div>
 
-      <!-- Map & Distance -->
       <div class="grid grid-cols-1 lg:grid-cols-2 gap-6">
         <div class="card p-6 relative">
           <div class="flex items-center justify-between mb-4">
@@ -101,7 +97,6 @@
         </div>
       </div>
 
-      <!-- Search & Results -->
       <section class="space-y-4">
           <div class="flex items-center gap-4">
               <input id="searchInput" type="text" placeholder="Search businesses..." class="flex-1 px-4 py-3 rounded-xl border border-slate-800 bg-slate-900 focus:border-indigo-500 transition">
@@ -133,8 +128,7 @@
       const runId = "{{ run_id }}";
       let allFindings = [];
       let currentFiltered = [];
-      let map = null;
-      let markerCluster = null, heatLayer = null;
+      let map = null, markerCluster = null, heatLayer = null;
       let sortConfig = { key: 'distance_miles', direction: 'asc' };
 
       function updateStatusBadge(status) {
@@ -167,10 +161,8 @@
       function renderAnalytics(findings) {
           const typeCtx = document.getElementById('typeChart').getContext('2d');
           const qualCtx = document.getElementById('qualityChart').getContext('2d');
-
           const typeCounts = {};
           findings.forEach(f => typeCounts[f.business_type] = (typeCounts[f.business_type] || 0) + 1);
-
           new Chart(typeCtx, {
               type: 'doughnut',
               data: {
@@ -179,11 +171,9 @@
               },
               options: { plugins: { legend: { display: false } }, cutout: '70%' }
           });
-
           const scores = findings.map(f => f.quality_score);
           const avg = scores.length ? (scores.reduce((a,b)=>a+b,0)/scores.length).toFixed(1) : 0;
           document.getElementById('statAvgQuality').textContent = avg + '%';
-
           new Chart(qualCtx, {
               type: 'bar',
               data: { labels: ['Completeness'], datasets: [{ data: [avg], backgroundColor: '#6366f1' }] },
@@ -247,6 +237,11 @@
           if (format === 'json') {
               const dataStr = "data:text/json;charset=utf-8," + encodeURIComponent(JSON.stringify(allFindings, null, 2));
               const a = document.createElement('a'); a.setAttribute("href", dataStr); a.setAttribute("download", "findings.json"); a.click();
+          } else if (format === 'csv') {
+              const headers = Object.keys(allFindings[0]).join(",");
+              const rows = allFindings.map(f => Object.values(f).map(v => `"${String(v).replace(/"/g, '""')}"`).join(",")).join("\n");
+              const csvContent = "data:text/csv;charset=utf-8," + encodeURIComponent(headers + "\n" + rows);
+              const a = document.createElement('a'); a.setAttribute("href", csvContent); a.setAttribute("download", "findings.csv"); a.click();
           }
       }
 
