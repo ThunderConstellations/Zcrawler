@@ -5,102 +5,300 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
     <title>Zcrawler Dashboard</title>
     <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/tailwindcss@3.4.1/dist/tailwind.min.css" />
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.1/css/all.min.css" />
     <style>
-      body { background: #0b1220; color: #e5e7eb; font-family: ui-sans-serif, system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, "Helvetica Neue", Arial, "Noto Sans", sans-serif; }
-      .card { background: rgba(17, 24, 39, 0.8); border: 1px solid rgba(255, 255, 255, 0.08); border-radius: 12px; transition: all 0.2s ease; }
-      .card:hover { border-color: rgba(99, 102, 241, 0.4); }
-      input, select, textarea { background: #111827 !important; border: 1px solid #374151 !important; color: #f3f4f6 !important; }
-      input:focus, select:focus, textarea:focus { border-color: #6366f1 !important; outline: none !important; ring: 2px solid rgba(99, 102, 241, 0.2); }
-      .btn-primary { background: #4f46e5; transition: background 0.2s; }
-      .btn-primary:hover { background: #4338ca; }
+      body { background: #0f172a; color: #f1f5f9; font-family: 'Inter', system-ui, sans-serif; }
+      .sidebar { background: #1e293b; border-right: 1px solid #334155; }
+      .card { background: #1e293b; border: 1px solid #334155; border-radius: 1rem; transition: all 0.2s; }
+      .card:hover { border-color: #6366f1; transform: translateY(-2px); }
+      input, select, textarea { background: #0f172a !important; border: 1px solid #334155 !important; color: #f1f5f9 !important; }
+      .btn-primary { background: #6366f1; box-shadow: 0 4px 6px -1px rgba(99, 102, 241, 0.4); }
+      .btn-primary:hover { background: #4f46e5; }
+      .nav-link { color: #94a3b8; transition: all 0.2s; }
+      .nav-link:hover, .nav-link.active { color: #6366f1; background: rgba(99, 102, 241, 0.1); }
+      ::-webkit-scrollbar { width: 6px; }
+      ::-webkit-scrollbar-thumb { background: #334155; border-radius: 10px; }
     </style>
   </head>
-  <body class="min-h-screen">
-    <div class="max-w-7xl mx-auto p-6 space-y-8">
-      <header class="flex items-center justify-between">
-        <div><h1 class="text-3xl font-bold text-white tracking-tight" onclick="location.reload()" style="cursor:pointer">Zcrawler</h1><p class="text-slate-400 mt-1">Automate your data extraction workflows.</p></div>
-        <div class="bg-slate-900 px-4 py-2 rounded-lg border border-slate-800"><span id="statusLine" class="text-sm font-medium text-indigo-400 italic">Connecting...</span></div>
+  <body class="flex h-screen overflow-hidden">
+    <!-- Sidebar -->
+    <aside class="sidebar w-64 flex-shrink-0 flex flex-col">
+      <div class="p-6">
+        <div class="flex items-center gap-3">
+          <div class="w-10 h-10 bg-indigo-600 rounded-xl flex items-center justify-center shadow-lg shadow-indigo-500/20">
+            <i class="fas fa-spider text-white"></i>
+          </div>
+          <span class="text-xl font-bold tracking-tight text-white">Zcrawler</span>
+        </div>
+      </div>
+      <nav class="flex-1 px-4 py-4 space-y-2 overflow-y-auto">
+        <a href="/" class="nav-link active flex items-center gap-3 px-4 py-3 rounded-xl font-medium">
+          <i class="fas fa-th-large w-5"></i> Dashboard
+        </a>
+        <div class="pt-4 pb-2 px-4 text-xs font-bold text-slate-500 uppercase tracking-widest">Management</div>
+        <button onclick="showSection('definitions')" class="w-full nav-link flex items-center gap-3 px-4 py-3 rounded-xl font-medium">
+          <i class="fas fa-file-code w-5"></i> Definitions
+        </button>
+        <button onclick="showSection('schedules')" class="w-full nav-link flex items-center gap-3 px-4 py-3 rounded-xl font-medium">
+          <i class="fas fa-calendar-alt w-5"></i> Schedules
+        </button>
+        <button onclick="showSection('runs')" class="w-full nav-link flex items-center gap-3 px-4 py-3 rounded-xl font-medium">
+          <i class="fas fa-history w-5"></i> Run History
+        </button>
+      </nav>
+      <div class="p-4 border-t border-slate-700">
+        <div class="p-4 bg-slate-800/50 rounded-xl">
+          <p class="text-xs text-slate-400 mb-1">Status</p>
+          <div class="flex items-center gap-2">
+            <span class="w-2 h-2 bg-emerald-500 rounded-full animate-pulse"></span>
+            <span class="text-sm font-medium text-slate-200">System Online</span>
+          </div>
+        </div>
+      </div>
+    </aside>
+
+    <!-- Main Content -->
+    <main class="flex-1 flex flex-col overflow-hidden bg-slate-950">
+      <header class="h-16 border-b border-slate-800 flex items-center justify-between px-8 bg-slate-900/50 backdrop-blur-sm sticky top-0 z-10">
+        <h1 id="sectionTitle" class="text-lg font-semibold text-white">Dashboard Overview</h1>
+        <div class="flex items-center gap-4">
+          <div class="relative">
+            <i class="fas fa-search absolute left-3 top-1/2 -translate-y-1/2 text-slate-500"></i>
+            <input id="globalSearch" type="text" placeholder="Search everything..." class="pl-10 pr-4 py-2 rounded-full w-64 text-sm">
+          </div>
+          <button onclick="toggleDefForm()" class="btn-primary px-4 py-2 rounded-full text-sm font-bold text-white flex items-center gap-2">
+            <i class="fas fa-plus"></i> New Crawler
+          </button>
+        </div>
       </header>
 
-      <div class="relative max-w-xl">
-          <input id="globalSearch" type="text" placeholder="Search definitions or history..." class="w-full pl-4 pr-4 py-2 rounded-lg border border-slate-800 bg-slate-900 focus:border-indigo-500 transition text-sm">
-      </div>
-
-      <div class="grid grid-cols-1 xl:grid-cols-3 gap-8">
-        <div class="xl:col-span-2 space-y-8">
-          <section class="card p-6">
-            <div class="flex items-center justify-between mb-6">
-              <h2 class="text-xl font-semibold text-white">Crawler Definitions</h2>
-              <button onclick="toggleDefForm()" class="text-sm bg-indigo-600/20 text-indigo-300 px-3 py-1 rounded hover:bg-indigo-600/30 transition">+ New Definition</button>
-            </div>
-
-            <div id="defFormContainer" class="hidden mb-8 p-4 bg-slate-900/50 rounded-lg border border-slate-700 space-y-4">
-              <h3 id="formTitle" class="font-medium text-white">New Crawler Definition</h3>
-              <input id="defId" type="hidden">
-              <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
-                <div><label class="block text-xs uppercase text-slate-500 font-bold mb-1">Name</label><input id="defName" type="text" class="w-full rounded px-3 py-2 text-sm"></div>
-                <div><label class="block text-xs uppercase text-slate-500 font-bold mb-1">Template</label><select id="defTemplate" onchange="updateTemplateForm()" class="w-full rounded px-3 py-2 text-sm text-white bg-slate-900"><option value="osm_business_crawler">OSM Business Crawler</option><option value="directory_scraper">Directory Scraper</option></select></div>
-              </div>
-              <div><label class="block text-xs uppercase text-slate-500 font-bold mb-1">Description</label><textarea id="defDesc" class="w-full rounded px-3 py-2 text-sm h-16"></textarea></div>
-
-              <div class="space-y-4">
-                <div class="flex items-center justify-between"><h4 class="text-xs font-bold text-slate-500 uppercase">Configuration</h4><button onclick="toggleAdvanced()" class="text-[10px] text-indigo-400 hover:underline">Toggle Advanced (JSON)</button></div>
-
-                <div id="osmConfig" class="grid grid-cols-2 md:grid-cols-4 gap-4">
-                    <div class="col-span-2"><label class="block text-[10px] text-slate-600 font-bold mb-1">Categories (comma sep)</label><input id="confCategories" type="text" class="w-full rounded px-3 py-2 text-sm"></div>
-                    <div><label class="block text-[10px] text-slate-600 font-bold mb-1">Radius (Mi)</label><input id="confRadius" type="number" step="0.1" class="w-full rounded px-3 py-2 text-sm"></div>
-                    <div><label class="block text-[10px] text-slate-600 font-bold mb-1">Limit</label><input id="confLimit" type="number" class="w-full rounded px-3 py-2 text-sm"></div>
-                    <div class="col-span-2"><label class="block text-[10px] text-slate-600 font-bold mb-1">City Query</label><input id="confCity" type="text" class="w-full rounded px-3 py-2 text-sm"></div>
+      <div class="flex-1 overflow-y-auto p-8 space-y-8">
+        <!-- Dashboard Section -->
+        <div id="section-dashboard" class="space-y-8">
+          <div class="grid grid-cols-1 md:grid-cols-3 gap-6">
+            <div class="card p-6 border-l-4 border-indigo-500">
+              <div class="flex justify-between items-start">
+                <div>
+                  <p class="text-slate-400 text-xs font-bold uppercase mb-1">Total Crawl Runs</p>
+                  <h3 id="statTotalRuns" class="text-3xl font-bold text-white">0</h3>
                 </div>
-
-                <div id="dirConfig" class="hidden"><label class="block text-[10px] text-slate-600 font-bold mb-1">Scrape URL</label><input id="confUrl" type="text" class="w-full rounded px-3 py-2 text-sm"></div>
-
-                <div id="advancedConfig" class="hidden"><label class="block text-[10px] text-slate-600 font-bold mb-1">Raw Config (JSON)</label><textarea id="defConfig" class="w-full rounded px-3 py-2 text-sm font-mono h-32"></textarea></div>
+                <div class="p-3 bg-indigo-500/10 rounded-lg text-indigo-500"><i class="fas fa-play"></i></div>
               </div>
+            </div>
+            <div class="card p-6 border-l-4 border-emerald-500">
+              <div class="flex justify-between items-start">
+                <div>
+                  <p class="text-slate-400 text-xs font-bold uppercase mb-1">Total Findings</p>
+                  <h3 id="statFindings" class="text-3xl font-bold text-white">0</h3>
+                </div>
+                <div class="p-3 bg-emerald-500/10 rounded-lg text-emerald-500"><i class="fas fa-database"></i></div>
+              </div>
+            </div>
+            <div class="card p-6 border-l-4 border-amber-500">
+              <div class="flex justify-between items-start">
+                <div>
+                  <p class="text-slate-400 text-xs font-bold uppercase mb-1">Success Rate</p>
+                  <h3 id="statSuccessRate" class="text-3xl font-bold text-white">0%</h3>
+                </div>
+                <div class="p-3 bg-amber-500/10 rounded-lg text-amber-500"><i class="fas fa-check-circle"></i></div>
+              </div>
+            </div>
+          </div>
 
-              <div class="flex justify-end gap-3 pt-4 border-t border-slate-800">
-                <button onclick="toggleDefForm()" class="px-4 py-2 text-sm text-slate-400 hover:text-white">Cancel</button>
-                <button id="saveBtn" onclick="saveDefinition()" class="btn-primary px-6 py-2 rounded text-sm font-semibold text-white">Save Definition</button>
+          <div class="grid grid-cols-1 lg:grid-cols-3 gap-8">
+            <div class="lg:col-span-2 space-y-6">
+              <div class="card p-6">
+                <div class="flex items-center justify-between mb-6">
+                  <h2 class="text-lg font-semibold text-white">Recent Run Activity</h2>
+                  <button onclick="showSection('runs')" class="text-indigo-400 text-sm font-medium hover:underline">View All</button>
+                </div>
+                <div class="overflow-x-auto">
+                  <table class="w-full text-sm">
+                    <thead>
+                      <tr class="text-left text-slate-500 border-b border-slate-800">
+                        <th class="pb-3 font-medium uppercase tracking-wider text-[10px]">Run ID</th>
+                        <th class="pb-3 font-medium uppercase tracking-wider text-[10px]">Status</th>
+                        <th class="pb-3 font-medium uppercase tracking-wider text-[10px]">Findings</th>
+                        <th class="pb-3 font-medium uppercase tracking-wider text-[10px]">Created</th>
+                        <th class="pb-3"></th>
+                      </tr>
+                    </thead>
+                    <tbody id="runsTbody" class="divide-y divide-slate-800"></tbody>
+                  </table>
+                </div>
               </div>
             </div>
 
-            <div class="overflow-hidden"><table class="w-full text-sm"><thead><tr class="text-left text-slate-500 border-b border-slate-800"><th class="pb-3 font-semibold uppercase">Name</th><th class="pb-3 font-semibold uppercase">Template</th><th class="pb-3 font-semibold uppercase">Created</th><th class="pb-3 text-right">Actions</th></tr></thead><tbody id="defTbody" class="divide-y divide-slate-800"></tbody></table></div>
-          </section>
-
-          <section class="card p-6">
-            <h2 class="text-xl font-semibold text-white mb-6">Execution History</h2>
-            <div class="overflow-hidden"><table class="w-full text-sm"><thead><tr class="text-left text-slate-500 border-b border-slate-800"><th class="pb-3 font-semibold uppercase">Run ID</th><th class="pb-3 font-semibold uppercase">Status</th><th class="pb-3 font-semibold uppercase">Findings</th><th class="pb-3 font-semibold uppercase">Date</th><th class="pb-3 text-right">Actions</th></tr></thead><tbody id="runsTbody" class="divide-y divide-slate-800"></tbody></table></div>
-          </section>
+            <div class="space-y-6">
+              <section class="card p-6">
+                <h3 class="text-white font-bold text-sm uppercase mb-4 flex items-center gap-2">
+                  <i class="fas fa-rocket text-indigo-500"></i> Quick Execute
+                </h3>
+                <form id="createRunForm" class="space-y-4">
+                  <div>
+                    <label class="block text-xs text-slate-500 font-bold mb-2 uppercase">Crawler Definition</label>
+                    <select id="runDefId" class="w-full rounded-xl px-4 py-3 text-sm focus:ring-2 ring-indigo-500/20"></select>
+                  </div>
+                  <div id="adhocFields" class="space-y-4 p-4 bg-slate-900/50 rounded-xl border border-slate-800 transition-all">
+                    <div>
+                      <label class="block text-xs text-slate-500 font-bold mb-1 uppercase">Address Anchor</label>
+                      <input id="referenceAddress" type="text" value="410 Glendale Blvd, Valparaiso, IN" class="w-full rounded-lg px-3 py-2 text-sm">
+                    </div>
+                    <div>
+                      <label class="block text-xs text-slate-500 font-bold mb-1 uppercase">City Context</label>
+                      <input id="cityQuery" type="text" value="Valparaiso, Indiana, USA" class="w-full rounded-lg px-3 py-2 text-sm">
+                    </div>
+                  </div>
+                  <button type="submit" class="w-full py-4 btn-primary rounded-xl font-bold text-white transition-all active:scale-[0.98]">
+                    Launch Crawler
+                  </button>
+                </form>
+              </section>
+            </div>
+          </div>
         </div>
 
-        <div class="space-y-8">
-          <section class="card p-6">
-            <h2 class="text-xl font-semibold text-white mb-6">Launch Crawler</h2>
-            <form id="createRunForm" class="space-y-4">
-              <div><label class="block text-xs uppercase text-slate-500 font-bold mb-1">Select Definition (Optional)</label><select id="runDefId" class="w-full rounded px-3 py-2 text-sm text-white bg-slate-900"><option value="">-- Ad-hoc Run --</option></select></div>
-              <div id="adhocFields" class="space-y-4 pt-4 border-t border-slate-800">
-                <div><label class="block text-xs uppercase text-slate-500 font-bold mb-1">Reference Address</label><input id="referenceAddress" type="text" value="410 Glendale Blvd, Valparaiso, IN" class="w-full rounded px-3 py-2 text-sm"></div>
-                <div><label class="block text-xs uppercase text-slate-500 font-bold mb-1">City Query</label><input id="cityQuery" type="text" value="Valparaiso, Indiana, USA" class="w-full rounded px-3 py-2 text-sm"></div>
+        <!-- Other sections (Definitions, Schedules, Runs) will be managed via JS -->
+        <div id="section-definitions" class="hidden space-y-6">
+           <div class="flex items-center justify-between">
+             <h2 class="text-2xl font-bold text-white">Crawler Definitions</h2>
+             <button onclick="toggleDefForm()" class="btn-primary px-6 py-2 rounded-full font-bold">Add New</button>
+           </div>
+           <div class="card p-6 overflow-hidden">
+             <table class="w-full text-sm">
+               <thead>
+                 <tr class="text-left text-slate-500 border-b border-slate-800">
+                   <th class="pb-4 font-bold uppercase text-[10px]">Name</th>
+                   <th class="pb-4 font-bold uppercase text-[10px]">Template</th>
+                   <th class="pb-4 font-bold uppercase text-[10px]">Created</th>
+                   <th class="pb-4 text-right">Actions</th>
+                 </tr>
+               </thead>
+               <tbody id="defTbody" class="divide-y divide-slate-800"></tbody>
+             </table>
+           </div>
+        </div>
+
+        <div id="section-schedules" class="hidden space-y-6">
+           <div class="flex items-center justify-between">
+             <h2 class="text-2xl font-bold text-white">Scheduled Tasks</h2>
+             <button onclick="showScheduleModal()" class="btn-primary px-6 py-2 rounded-full font-bold">New Schedule</button>
+           </div>
+           <div class="card p-6 overflow-hidden">
+             <table class="w-full text-sm">
+               <thead>
+                 <tr class="text-left text-slate-500 border-b border-slate-800">
+                   <th class="pb-4 font-bold uppercase text-[10px]">Schedule Name</th>
+                   <th class="pb-4 font-bold uppercase text-[10px]">Frequency</th>
+                   <th class="pb-4 font-bold uppercase text-[10px]">Next Run</th>
+                   <th class="pb-4 text-right">Status</th>
+                 </tr>
+               </thead>
+               <tbody id="schedTbody" class="divide-y divide-slate-800"></tbody>
+             </table>
+           </div>
+        </div>
+
+        <div id="section-runs" class="hidden space-y-6">
+           <h2 class="text-2xl font-bold text-white">Full Run History</h2>
+           <div class="card p-6 overflow-hidden">
+             <table class="w-full text-sm">
+               <thead>
+                 <tr class="text-left text-slate-500 border-b border-slate-800">
+                   <th class="pb-4 font-bold uppercase text-[10px]">ID</th>
+                   <th class="pb-4 font-bold uppercase text-[10px]">Status</th>
+                   <th class="pb-4 font-bold uppercase text-[10px]">Findings</th>
+                   <th class="pb-4 font-bold uppercase text-[10px]">Date</th>
+                   <th class="pb-4"></th>
+                 </tr>
+               </thead>
+               <tbody id="fullRunsTbody" class="divide-y divide-slate-800"></tbody>
+             </table>
+           </div>
+        </div>
+      </div>
+    </main>
+
+    <!-- Modals -->
+    <div id="defFormContainer" class="fixed inset-0 z-50 hidden flex items-center justify-center p-4 bg-slate-950/80 backdrop-blur-sm">
+      <div class="card w-full max-w-2xl max-h-[90vh] overflow-y-auto p-8 shadow-2xl relative">
+        <button onclick="toggleDefForm()" class="absolute top-6 right-6 text-slate-500 hover:text-white"><i class="fas fa-times text-xl"></i></button>
+        <h2 id="formTitle" class="text-2xl font-bold text-white mb-6">New Crawler Definition</h2>
+        <div class="space-y-6">
+          <input type="hidden" id="defId">
+          <div class="grid grid-cols-2 gap-6">
+            <div><label class="block text-xs font-bold text-slate-500 uppercase mb-2">Display Name</label><input id="defName" type="text" class="w-full rounded-xl px-4 py-3"></div>
+            <div><label class="block text-xs font-bold text-slate-500 uppercase mb-2">Template</label>
+              <select id="defTemplate" onchange="updateTemplateForm()" class="w-full rounded-xl px-4 py-3">
+                <option value="osm_business_crawler">OpenStreetMap Crawler</option>
+                <option value="directory_scraper">Directory Scraper</option>
+              </select>
+            </div>
+          </div>
+          <div><label class="block text-xs font-bold text-slate-500 uppercase mb-2">Description</label><textarea id="defDesc" rows="2" class="w-full rounded-xl px-4 py-3"></textarea></div>
+
+          <div id="osmConfig" class="space-y-4 p-6 bg-slate-900 rounded-2xl border border-slate-800">
+            <h4 class="text-sm font-bold text-indigo-400 uppercase tracking-widest">OSM Configuration</h4>
+            <div class="grid grid-cols-2 gap-4">
+              <div class="col-span-2"><label class="block text-[10px] text-slate-500 font-bold uppercase mb-1">Categories (comma separated)</label><input id="confCategories" type="text" placeholder="e.g. restaurant, cafe" class="w-full rounded-lg px-3 py-2"></div>
+              <div><label class="block text-[10px] text-slate-500 font-bold uppercase mb-1">Target City Query</label><input id="confCity" type="text" placeholder="Valparaiso, IN" class="w-full rounded-lg px-3 py-2"></div>
+              <div class="grid grid-cols-2 gap-2">
+                <div><label class="block text-[10px] text-slate-500 font-bold uppercase mb-1">Radius (mi)</label><input id="confRadius" type="number" step="0.1" class="w-full rounded-lg px-3 py-2"></div>
+                <div><label class="block text-[10px] text-slate-500 font-bold uppercase mb-1">Limit</label><input id="confLimit" type="number" class="w-full rounded-lg px-3 py-2"></div>
               </div>
-              <div class="grid grid-cols-2 gap-4"><div class="flex items-center gap-2"><input id="enableReverseGeocode" type="checkbox" checked class="h-4 w-4 bg-slate-900 border-slate-700 rounded text-indigo-600"> <label class="text-xs text-slate-400">Reverse Geocode</label></div><div><input id="maxReverseGeocodeLookups" type="number" value="10" class="w-full rounded px-2 py-1 text-xs"></div></div>
-              <button type="submit" class="w-full py-3 btn-primary rounded-lg font-bold text-lg text-white shadow-lg shadow-indigo-500/20 transition-transform active:scale-[0.98]">Execute Run</button>
-            </form>
-          </section>
-          <section class="card p-6 bg-indigo-600/5 border-indigo-500/20">
-            <h3 class="text-indigo-300 font-bold text-sm uppercase mb-3">Project Statistics</h3>
-            <div class="grid grid-cols-2 gap-4"><div><p class="text-slate-500 text-xs">Total Runs</p><p id="statTotalRuns" class="text-2xl font-bold text-white">0</p></div><div><p class="text-slate-500 text-xs">Total Findings</p><p id="statFindings" class="text-2xl font-bold text-white">0</p></div></div>
-            <div class="pt-4 mt-4 border-t border-slate-800 flex justify-between text-xs"><span class="text-slate-400">Success Rate</span><span id="statSuccessRate" class="text-emerald-400 font-bold">0%</span></div>
-          </section>
+            </div>
+          </div>
+
+          <div id="dirConfig" class="hidden space-y-4 p-6 bg-slate-900 rounded-2xl border border-slate-800">
+            <h4 class="text-sm font-bold text-indigo-400 uppercase tracking-widest">Scraper Configuration</h4>
+            <div><label class="block text-[10px] text-slate-500 font-bold uppercase mb-1">Target URL</label><input id="confUrl" type="url" class="w-full rounded-lg px-3 py-2"></div>
+          </div>
+
+          <div class="flex items-center gap-4 pt-4">
+            <button id="saveBtn" onclick="saveDefinition()" class="flex-1 py-4 btn-primary rounded-xl font-bold text-white">Save Definition</button>
+            <button onclick="toggleAdvanced()" class="px-6 py-4 bg-slate-800 rounded-xl text-slate-400 font-bold border border-slate-700">JSON Mode</button>
+          </div>
+          <div id="advancedConfig" class="hidden mt-4"><label class="block text-xs font-bold text-slate-500 uppercase mb-2">Raw JSON Configuration</label><textarea id="defConfig" rows="8" class="w-full rounded-xl px-4 py-3 font-mono text-xs"></textarea></div>
         </div>
       </div>
     </div>
 
+    <!-- Schedule Modal -->
+    <div id="schedModal" class="fixed inset-0 z-50 hidden flex items-center justify-center p-4 bg-slate-950/80 backdrop-blur-sm">
+       <div class="card w-full max-w-md p-8 shadow-2xl relative">
+          <button onclick="closeSchedModal()" class="absolute top-6 right-6 text-slate-500"><i class="fas fa-times text-xl"></i></button>
+          <h2 class="text-2xl font-bold text-white mb-6">Create Schedule</h2>
+          <div class="space-y-4">
+             <div><label class="block text-xs font-bold text-slate-500 uppercase mb-2">Schedule Name</label><input id="schedName" type="text" class="w-full rounded-xl px-4 py-3"></div>
+             <div><label class="block text-xs font-bold text-slate-500 uppercase mb-2">Crawler Definition</label><select id="schedDefId" class="w-full rounded-xl px-4 py-3"></select></div>
+             <div><label class="block text-xs font-bold text-slate-500 uppercase mb-2">Frequency (Cron)</label>
+               <select id="schedFreq" class="w-full rounded-xl px-4 py-3">
+                 <option value="0 0 * * *">Daily at Midnight</option>
+                 <option value="0 0 * * 0">Weekly on Sundays</option>
+                 <option value="0 12 1 * *">Monthly</option>
+               </select>
+             </div>
+             <button onclick="saveSchedule()" class="w-full py-4 btn-primary rounded-xl font-bold text-white mt-4">Save Schedule</button>
+          </div>
+       </div>
+    </div>
+
     <script>
-      let definitions = [], runs = [];
+      let definitions = [], runs = [], schedules = [];
+      function showSection(id) {
+        document.querySelectorAll('[id^="section-"]').forEach(s => s.classList.add('hidden'));
+        document.getElementById('section-' + id).classList.remove('hidden');
+        document.querySelectorAll('.nav-link').forEach(l => l.classList.remove('active'));
+        const navMap = { dashboard: 0, definitions: 1, schedules: 2, runs: 3 };
+        const links = document.querySelectorAll('.nav-link');
+        if (links[navMap[id]]) links[navMap[id]].classList.add('active');
+        document.getElementById('sectionTitle').textContent = id.charAt(0).toUpperCase() + id.slice(1) + (id === 'dashboard' ? ' Overview' : '');
+      }
+
       function toggleDefForm() { const c = document.getElementById('defFormContainer'); c.classList.toggle('hidden'); if (c.classList.contains('hidden')) clearForm(); }
       function clearForm() { ['defId','defName','defDesc','confCategories','confCity','confRadius','confLimit','confUrl','defConfig'].forEach(id => document.getElementById(id).value = ''); document.getElementById('formTitle').textContent = 'New Crawler Definition'; document.getElementById('saveBtn').textContent = 'Save Definition'; }
       function updateTemplateForm() { const t = document.getElementById('defTemplate').value; document.getElementById('osmConfig').classList.toggle('hidden', t !== 'osm_business_crawler'); document.getElementById('dirConfig').classList.toggle('hidden', t !== 'directory_scraper'); }
-      function toggleAdvanced() { ['osmConfig','dirConfig','advancedConfig'].forEach(id => { if (id === 'advancedConfig') document.getElementById(id).classList.toggle('hidden'); else updateTemplateForm(); }); }
+      function toggleAdvanced() { document.getElementById('advancedConfig').classList.toggle('hidden'); }
 
       async function saveDefinition() {
         const id = document.getElementById('defId').value, t = document.getElementById('defTemplate').value;
@@ -113,62 +311,72 @@
         if (res.ok) { toggleDefForm(); fetchData(); }
       }
 
-      async function deleteDef(id) { if (confirm('Delete definition?')) { const res = await fetch(`/api/definitions/${id}`, { method: 'DELETE' }); if (res.ok) fetchData(); else alert('Failed to delete'); } }
-      async function deleteRun(id) { if (confirm('Delete run?')) { const res = await fetch(`/api/runs/${id}`, { method: 'DELETE' }); if (res.ok) fetchData(); else alert('Failed to delete'); } }
-      function editDef(id) {
-          const d = definitions.find(x => x.id === id); if (!d) return;
-          clearForm(); document.getElementById('defFormContainer').classList.remove('hidden');
-          document.getElementById('formTitle').textContent = 'Edit Definition'; document.getElementById('saveBtn').textContent = 'Update';
-          document.getElementById('defId').value = d.id; document.getElementById('defName').value = d.name; document.getElementById('defDesc').value = d.description;
-          document.getElementById('defTemplate').value = d.template_key; document.getElementById('defConfig').value = d.config_json;
-          const c = JSON.parse(d.config_json);
-          document.getElementById('confCategories').value = c.categories || ''; document.getElementById('confCity').value = c.city_query || '';
-          document.getElementById('confRadius').value = c.radius_mi || ''; document.getElementById('confLimit').value = c.limit || '';
-          document.getElementById('confUrl').value = c.url || ''; updateTemplateForm();
+      async function deleteDef(id) { if (confirm('Delete definition?')) { const res = await fetch(`/api/definitions/${id}`, { method: 'DELETE' }); if (res.ok) fetchData(); } }
+      async function deleteRun(id) { if (confirm('Delete run?')) { const res = await fetch(`/api/runs/${id}`, { method: 'DELETE' }); if (res.ok) fetchData(); } }
+
+      async function showScheduleModal() {
+        const select = document.getElementById('schedDefId'); select.innerHTML = '';
+        definitions.forEach(d => { const opt = document.createElement('option'); opt.value = d.id; opt.textContent = d.name; select.appendChild(opt); });
+        document.getElementById('schedModal').classList.remove('hidden');
       }
+      function closeSchedModal() { document.getElementById('schedModal').classList.add('hidden'); }
+      async function saveSchedule() {
+        const body = { definition_id: document.getElementById('schedDefId').value, name: document.getElementById('schedName').value, cron_expr: document.getElementById('schedFreq').value, is_active: true };
+        const res = await fetch('/api/schedules', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(body) });
+        if (res.ok) { closeSchedModal(); fetchData(); }
+      }
+      async function deleteSched(id) { if (confirm('Delete schedule?')) { const res = await fetch(`/api/schedules/${id}`, { method: 'DELETE' }); if (res.ok) fetchData(); } }
 
       function renderDefinitions(defs) {
-        definitions = defs; const q = document.getElementById('globalSearch').value.toLowerCase();
-        const filtered = defs.filter(d => d.name.toLowerCase().includes(q));
-        const tbody = document.getElementById('defTbody'); const select = document.getElementById('runDefId');
+        definitions = defs; const tbody = document.getElementById('defTbody'); const select = document.getElementById('runDefId');
         tbody.innerHTML = ''; select.innerHTML = '<option value="">-- Ad-hoc Run --</option>';
-        filtered.forEach(d => {
+        defs.forEach(d => {
           const tr = document.createElement('tr');
-          tr.innerHTML = `<td class="py-4"><div class="font-medium text-white">${d.name}</div><div class="text-xs text-slate-500">${d.description||''}</div></td><td class="py-4 text-slate-400 text-xs">${d.template_key}</td><td class="py-4 text-slate-500 text-xs">${new Date(d.created_at).toLocaleDateString()}</td><td class="py-4 text-right space-x-2"><button onclick="loadDefIntoRun('${d.id}')" class="text-indigo-400 font-semibold">Use</button><button onclick="editDef('${d.id}')" class="text-slate-400 font-semibold">Edit</button><button onclick="deleteDef('${d.id}')" class="text-red-400 font-semibold">Del</button></td>`;
+          tr.innerHTML = `<td class="py-4"><div class="font-semibold text-white">${d.name}</div><div class="text-xs text-slate-500">${d.description||''}</div></td><td class="py-4 text-slate-400 text-xs">${d.template_key}</td><td class="py-4 text-slate-500 text-xs">${new Date(d.created_at).toLocaleDateString()}</td><td class="py-4 text-right space-x-3"><button onclick="loadDefIntoRun('${d.id}')" class="text-indigo-400 font-bold hover:text-indigo-300">Run</button><button onclick="deleteDef('${d.id}')" class="text-red-400/60 hover:text-red-400 font-bold">Del</button></td>`;
           tbody.appendChild(tr);
           const opt = document.createElement('option'); opt.value = d.id; opt.textContent = d.name; select.appendChild(opt);
         });
       }
 
       function renderRuns(runList) {
-        runs = runList; const q = document.getElementById('globalSearch').value.toLowerCase();
-        const filtered = runList.filter(r => r.id.toLowerCase().includes(q) || r.status.toLowerCase().includes(q));
-        const tbody = document.getElementById("runsTbody"); tbody.innerHTML = "";
+        runs = runList; const dashboardTbody = document.getElementById("runsTbody"); const fullTbody = document.getElementById('fullRunsTbody');
+        dashboardTbody.innerHTML = ""; fullTbody.innerHTML = "";
         let total = 0, success = 0;
-        runList.forEach(r => { total += (r.findings_count||0); if (r.status === 'completed') success++; });
-        filtered.forEach(r => {
-          const tr = document.createElement("tr");
-          tr.innerHTML = `<td class="py-4 font-mono text-xs text-slate-400">${r.id.substring(0,8)}</td><td class="py-4"><span class="px-2 py-0.5 rounded border text-[10px] uppercase">${r.status}</span></td><td class="py-4">${r.findings_count||0}</td><td class="py-4 text-xs text-slate-500">${new Date(r.created_at).toLocaleString()}</td><td class="py-4 text-right space-x-3"><a class="text-indigo-400 font-semibold text-xs" href="/runs/${r.id}">Details</a><button onclick="deleteRun('${r.id}')" class="text-red-400 font-semibold text-xs">Del</button></td>`;
-          tbody.appendChild(tr);
+        runList.forEach((r, i) => {
+          total += (r.findings_count||0); if (r.status === 'completed') success++;
+          const rowHtml = `<td class="py-4 font-mono text-[10px] text-slate-400">#${r.id.substring(0,6)}</td><td class="py-4"><span class="px-2 py-0.5 rounded-full border text-[9px] font-bold uppercase ${r.status === 'completed' ? 'border-emerald-500/30 text-emerald-400 bg-emerald-500/10' : 'border-amber-500/30 text-amber-400 bg-amber-500/10'}">${r.status}</span></td><td class="py-4 font-bold text-white">${r.findings_count||0}</td><td class="py-4 text-[10px] text-slate-500 font-medium">${new Date(r.created_at).toLocaleString()}</td><td class="py-4 text-right"><a class="text-indigo-400 font-bold text-xs bg-indigo-500/10 px-3 py-1 rounded-full hover:bg-indigo-500/20 transition" href="/runs/${r.id}">View Results</a></td>`;
+          if (i < 5) { const tr = document.createElement("tr"); tr.innerHTML = rowHtml; dashboardTbody.appendChild(tr); }
+          const ftr = document.createElement("tr"); ftr.innerHTML = rowHtml + `<td class="py-4 text-right"><button onclick="deleteRun('${r.id}')" class="text-red-400 text-xs ml-2"><i class="fas fa-trash"></i></button></td>`;
+          fullTbody.appendChild(ftr);
         });
         document.getElementById('statTotalRuns').textContent = runList.length; document.getElementById('statFindings').textContent = total;
         document.getElementById('statSuccessRate').textContent = (runList.length ? Math.round(success/runList.length*100) : 0) + '%';
-        if (runList.length) document.getElementById("statusLine").textContent = `Latest: ${runList[0].status}`;
+      }
+
+      function renderSchedules(scheds) {
+        schedules = scheds; const tbody = document.getElementById('schedTbody'); tbody.innerHTML = '';
+        scheds.forEach(s => {
+          const tr = document.createElement('tr');
+          tr.innerHTML = `<td class="py-4 font-semibold text-white">${s.name}</td><td class="py-4 text-slate-400 text-xs">${s.cron_expr}</td><td class="py-4 text-slate-500 text-xs font-medium">${s.next_run_at ? new Date(s.next_run_at).toLocaleString() : 'Pending'}</td><td class="py-4 text-right"><button onclick="deleteSched('${s.id}')" class="text-red-400"><i class="fas fa-trash"></i></button></td>`;
+          tbody.appendChild(tr);
+        });
       }
 
       async function fetchData() {
-        const [dRes, rRes] = await Promise.all([fetch('/api/definitions'), fetch('/api/runs')]);
-        if (dRes.ok) renderDefinitions(await dRes.json()); if (rRes.ok) renderRuns(await rRes.json());
+        const [dRes, rRes, sRes] = await Promise.all([fetch('/api/definitions'), fetch('/api/runs'), fetch('/api/schedules')]);
+        if (dRes.ok) renderDefinitions(await dRes.json());
+        if (rRes.ok) renderRuns(await rRes.json());
+        if (sRes.ok) renderSchedules(await sRes.json());
       }
 
-      document.getElementById('globalSearch').addEventListener('input', () => { renderDefinitions(definitions); renderRuns(runs); });
       document.getElementById("createRunForm").addEventListener("submit", async (e) => {
-        e.preventDefault(); const body = { definition_id: document.getElementById("runDefId").value || null, reference_address: document.getElementById("referenceAddress").value, city_query: document.getElementById("cityQuery").value, enable_reverse_geocode: document.getElementById("enableReverseGeocode").checked, max_reverse_geocode_lookups: parseInt(document.getElementById("maxReverseGeocodeLookups").value) };
+        e.preventDefault(); const body = { definition_id: document.getElementById("runDefId").value || null, reference_address: document.getElementById("referenceAddress").value, city_query: document.getElementById("cityQuery").value, enable_reverse_geocode: true, max_reverse_geocode_lookups: 10 };
         const res = await fetch("/api/runs", { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify(body) });
         if (res.ok) { const d = await res.json(); window.location.href = `/runs/${d.id}`; }
       });
-      document.getElementById('runDefId').addEventListener('change', (e) => document.getElementById('adhocFields').classList.toggle('opacity-30', !!e.target.value));
-      fetchData(); setInterval(fetchData, 10000);
+
+      function loadDefIntoRun(id) { const d = definitions.find(x => x.id === id); if (!d) return; document.getElementById('runDefId').value = id; document.getElementById('adhocFields').style.opacity = '0.3'; }
+      fetchData(); setInterval(fetchData, 15000);
     </script>
   </body>
 </html>

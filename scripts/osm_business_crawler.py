@@ -59,6 +59,16 @@ def http_post_json(url: str, payload: str) -> Dict:
     with urllib.request.urlopen(request, timeout=40) as response:
         return json.loads(response.read().decode("utf-8"))
 
+def retry_http_post_json(url: str, payload: str, retries: int = 3) -> Optional[Dict]:
+    for i in range(retries):
+        try:
+            return http_post_json(url, payload)
+        except (HTTPError, URLError, TimeoutError) as e:
+            print(f"Attempt {i+1} failed for {url}: {e}")
+            if i < retries - 1:
+                time.sleep(2 ** i) # Exponential backoff
+    return None
+
 def geocode_address(address: str) -> Tuple[float, float]:
     params = urllib.parse.urlencode({"q": address, "format": "jsonv2", "limit": 1})
     url = f"https://nominatim.openstreetmap.org/search?{params}"
@@ -216,18 +226,26 @@ def main() -> None:
     OUTPUT_JSON, OUTPUT_CSV = OUTPUT_DIR / "businesses.json", OUTPUT_DIR / "businesses.csv"
     if args.categories: SELECTED_CATEGORIES = [c.strip() for c in args.categories.split(",") if c.strip()]
 
-    ref_lat, ref_lon = geocode_address(REFERENCE_ADDRESS)
-    area_id = find_city_area_id(CITY_QUERY)
+    try:
+        ref_lat, ref_lon = geocode_address(REFERENCE_ADDRESS)
+    except Exception as e:
+        print(f"Error geocoding reference address: {e}")
+        return
+
+    try:
+        area_id = find_city_area_id(CITY_QUERY)
+    except Exception as e:
+        print(f"Error finding city area: {e}")
+        return
+
     q = overpass_business_query(area_id, ref_lat, ref_lon)
 
     resp = None
     for e in OVERPASS_ENDPOINTS:
-        try:
-            resp = http_post_json(e, urllib.parse.urlencode({"data": q}))
-            if resp: break
-        except Exception: continue
+        resp = retry_http_post_json(e, urllib.parse.urlencode({"data": q}))
+        if resp: break
 
-    if not resp: raise RuntimeError("Overpass failed")
+    if not resp: raise RuntimeError("Overpass failed on all endpoints")
     businesses = extract_businesses(resp.get("elements", []), ref_lat, ref_lon)
     enrich_missing_locations(businesses)
     write_outputs(businesses)

@@ -73,7 +73,7 @@ def run_osm_business_crawler(run_id: str, request: CreateRunRequest, db: Session
             try: config = json.loads(definition.config_json)
             except Exception: pass
 
-    if run.template_key in ["valpo_businesses", "osm_business_crawler"]:
+    if run.template_key in ["osm_business_crawler"]:
         cmd = _script_command_for_osm(request, run_dir, config)
     elif run.template_key == "directory_scraper":
         cmd = _script_command_for_directory(run_dir, config)
