@@ -4,40 +4,27 @@
     <meta charset="UTF-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
     <title>Run Details - Zcrawler</title>
-    <link
-      rel="stylesheet"
-      href="https://cdn.jsdelivr.net/npm/tailwindcss@3.4.1/dist/tailwind.min.css"
-    />
-    <link
-      rel="stylesheet"
-      href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css"
-    />
+    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/tailwindcss@3.4.1/dist/tailwind.min.css" />
+    <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" />
+    <link rel="stylesheet" href="https://unpkg.com/leaflet.markercluster@1.4.1/dist/MarkerCluster.css" />
+    <link rel="stylesheet" href="https://unpkg.com/leaflet.markercluster@1.4.1/dist/MarkerCluster.Default.css" />
     <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
+    <script src="https://unpkg.com/leaflet.markercluster@1.4.1/dist/leaflet.markercluster.js"></script>
+    <script src="https://unpkg.com/leaflet.heat@0.2.0/dist/leaflet-heat.js"></script>
     <script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.1/dist/chart.umd.min.js"></script>
 
     <style>
-      body {
-        background: #0b1220;
-        color: #e5e7eb;
-        font-family: ui-sans-serif, system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, "Helvetica Neue", Arial, "Noto Sans", sans-serif;
-      }
-      .card {
-        background: rgba(17, 24, 39, 0.8);
-        border: 1px solid rgba(255, 255, 255, 0.08);
-        border-radius: 12px;
-      }
-      .badge {
-        font-size: 0.65rem;
-        font-weight: 700;
-        text-transform: uppercase;
-        padding: 0.125rem 0.5rem;
-        border-radius: 9999px;
-        border-width: 1px;
-      }
+      body { background: #0b1220; color: #e5e7eb; font-family: ui-sans-serif, system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, "Helvetica Neue", Arial, "Noto Sans", sans-serif; }
+      .card { background: rgba(17, 24, 39, 0.8); border: 1px solid rgba(255, 255, 255, 0.08); border-radius: 12px; }
+      .badge { font-size: 0.65rem; font-weight: 700; text-transform: uppercase; padding: 0.125rem 0.5rem; border-radius: 9999px; border-width: 1px; }
       .badge-completed { background: rgba(16, 185, 129, 0.1); color: #34d399; border-color: rgba(16, 185, 129, 0.2); }
       .badge-failed { background: rgba(239, 68, 68, 0.1); color: #f87171; border-color: rgba(239, 68, 68, 0.2); }
       .badge-running { background: rgba(245, 158, 11, 0.1); color: #fbbf24; border-color: rgba(245, 158, 11, 0.2); }
       .badge-queued { background: rgba(107, 114, 128, 0.1); color: #9ca3af; border-color: rgba(107, 114, 128, 0.2); }
+      input { background: #111827 !important; border: 1px solid #374151 !important; color: #f3f4f6 !important; }
+      th.sortable { cursor: pointer; user-select: none; }
+      th.sortable:hover { color: #6366f1; }
+      th.sortable::after { content: " ↕"; font-size: 0.8em; opacity: 0.3; }
     </style>
   </head>
   <body class="min-h-screen">
@@ -58,248 +45,225 @@
             <p class="text-sm text-slate-400 mt-1 font-mono">ID: {{ run_id }}</p>
           </div>
         </div>
-
         <div class="flex items-center gap-2">
+            <button onclick="viewLogs()" class="bg-slate-800 hover:bg-slate-700 text-slate-300 px-4 py-2 rounded-lg text-sm font-semibold transition border border-slate-700">View Logs</button>
             <button onclick="exportData('csv')" class="bg-slate-800 hover:bg-slate-700 text-slate-300 px-4 py-2 rounded-lg text-sm font-semibold transition border border-slate-700">Export CSV</button>
             <button onclick="exportData('json')" class="bg-slate-800 hover:bg-slate-700 text-slate-300 px-4 py-2 rounded-lg text-sm font-semibold transition border border-slate-700">Export JSON</button>
         </div>
       </div>
 
-      <!-- Stats Grid -->
-      <div class="grid grid-cols-2 md:grid-cols-4 gap-4">
-        <div class="card p-4">
-          <p class="text-xs font-bold text-slate-500 uppercase tracking-wider">Findings</p>
-          <p id="statFindings" class="text-2xl font-bold text-white mt-1">0</p>
-        </div>
-        <div class="card p-4">
-          <p class="text-xs font-bold text-slate-500 uppercase tracking-wider">Template</p>
-          <p id="statTemplate" class="text-sm font-mono text-indigo-300 mt-2">...</p>
-        </div>
-        <div class="card p-4">
-          <p class="text-xs font-bold text-slate-500 uppercase tracking-wider">Started</p>
-          <p id="statStarted" class="text-sm text-slate-300 mt-2">-</p>
-        </div>
-        <div class="card p-4">
-          <p class="text-xs font-bold text-slate-500 uppercase tracking-wider">Completed</p>
-          <p id="statCompleted" class="text-sm text-slate-300 mt-2">-</p>
-        </div>
+      <!-- Main Analytics Section -->
+      <div class="grid grid-cols-1 lg:grid-cols-4 gap-6">
+          <!-- Stats Column -->
+          <div class="space-y-4">
+              <div class="card p-4">
+                  <p class="text-xs font-bold text-slate-500 uppercase">Findings</p>
+                  <p id="statFindings" class="text-3xl font-bold text-white mt-1">0</p>
+              </div>
+              <div class="card p-4">
+                  <p class="text-xs font-bold text-slate-500 uppercase tracking-wider">Avg Quality</p>
+                  <p id="statAvgQuality" class="text-2xl font-bold text-indigo-400 mt-1">0</p>
+              </div>
+              <div class="card p-4">
+                  <p class="text-xs font-bold text-slate-500 uppercase">Template</p>
+                  <p id="statTemplate" class="text-xs font-mono text-slate-300 mt-2 truncate">...</p>
+              </div>
+          </div>
+
+          <!-- Charts -->
+          <div class="lg:col-span-3 grid grid-cols-1 md:grid-cols-2 gap-6">
+              <div class="card p-6">
+                  <h3 class="text-sm font-bold text-slate-400 uppercase mb-4">Business Types</h3>
+                  <div class="h-48"><canvas id="typeChart"></canvas></div>
+              </div>
+              <div class="card p-6">
+                  <h3 class="text-sm font-bold text-slate-400 uppercase mb-4">Data Completeness</h3>
+                  <div class="h-48"><canvas id="qualityChart"></canvas></div>
+              </div>
+          </div>
       </div>
 
-      <!-- Visualization Section -->
+      <!-- Map & Distance -->
       <div class="grid grid-cols-1 lg:grid-cols-2 gap-6">
-        <div class="card p-6">
-          <h2 class="text-lg font-semibold text-white mb-4">Distance Distribution (Miles)</h2>
-          <div class="h-[400px]">
-            <canvas id="histChart"></canvas>
+        <div class="card p-6 relative">
+          <div class="flex items-center justify-between mb-4">
+              <h2 class="text-lg font-semibold text-white">Geographic Map</h2>
+              <div class="flex items-center gap-2">
+                  <label class="text-xs text-slate-500">Heatmap</label>
+                  <input type="checkbox" id="heatmapToggle" onchange="toggleHeatmap()" class="h-3 w-3">
+              </div>
           </div>
-        </div>
-        <div class="card p-6">
-          <h2 class="text-lg font-semibold text-white mb-4">Geographic Map</h2>
           <div id="map" class="h-[400px] rounded-lg border border-slate-800 overflow-hidden"></div>
         </div>
+        <div class="card p-6">
+          <h2 class="text-lg font-semibold text-white mb-4">Distance Distribution</h2>
+          <div class="h-[400px]"><canvas id="histChart"></canvas></div>
+        </div>
       </div>
 
-      <!-- Error Message (Hidden if none) -->
-      <div id="errorAlert" class="hidden bg-red-900/20 border border-red-500/30 p-4 rounded-lg">
-        <h3 class="text-red-400 font-bold text-sm uppercase">Execution Error</h3>
-        <p id="errorMessage" class="text-red-200 text-sm mt-1"></p>
-      </div>
-
-      <!-- Findings Table -->
-      <section class="card p-6">
-        <div class="flex items-center justify-between mb-6">
-          <h2 class="text-xl font-semibold text-white">All Findings</h2>
-          <div class="text-sm text-slate-500">
-            Showing <span id="findingsCountLabel">0</span> entries
+      <!-- Search & Results -->
+      <section class="space-y-4">
+          <div class="flex items-center gap-4">
+              <input id="searchInput" type="text" placeholder="Search businesses..." class="flex-1 px-4 py-3 rounded-xl border border-slate-800 bg-slate-900 focus:border-indigo-500 transition">
           </div>
-        </div>
-        <div class="overflow-x-auto">
-          <table class="w-full text-sm">
-            <thead>
-              <tr class="text-left text-slate-500 border-b border-slate-800">
-                <th class="pb-3 font-semibold uppercase tracking-wider px-2">Dist</th>
-                <th class="pb-3 font-semibold uppercase tracking-wider">Name</th>
-                <th class="pb-3 font-semibold uppercase tracking-wider">Type</th>
-                <th class="pb-3 font-semibold uppercase tracking-wider">Phone</th>
-                <th class="pb-3 text-right">Website</th>
-              </tr>
-            </thead>
-            <tbody id="findingsTbody" class="divide-y divide-slate-800">
-              <!-- Dynamic content -->
-            </tbody>
-          </table>
-        </div>
+          <div class="card p-6">
+            <div class="flex items-center justify-between mb-6">
+              <h2 class="text-xl font-semibold text-white">Findings Table</h2>
+              <div class="text-sm text-slate-500">Showing <span id="findingsCountLabel">0</span> entries</div>
+            </div>
+            <div class="overflow-x-auto">
+              <table class="w-full text-sm">
+                <thead>
+                  <tr class="text-left text-slate-500 border-b border-slate-800">
+                    <th onclick="sortTable('distance_miles')" class="pb-3 px-2 sortable">Dist</th>
+                    <th onclick="sortTable('name')" class="pb-3 sortable">Name</th>
+                    <th onclick="sortTable('business_type')" class="pb-3 sortable">Type</th>
+                    <th class="pb-3">Enrichment</th>
+                    <th class="pb-3 text-right">Actions</th>
+                  </tr>
+                </thead>
+                <tbody id="findingsTbody" class="divide-y divide-slate-800"></tbody>
+              </table>
+            </div>
+          </div>
       </section>
     </div>
 
     <script>
       const runId = "{{ run_id }}";
       let allFindings = [];
+      let currentFiltered = [];
+      let map = null;
+      let markerCluster = null, heatLayer = null;
+      let sortConfig = { key: 'distance_miles', direction: 'asc' };
 
       function updateStatusBadge(status) {
         const badge = document.getElementById('statusBadge');
-        badge.textContent = status;
-        badge.className = 'badge badge-' + status;
+        badge.textContent = status; badge.className = 'badge badge-' + status;
+      }
+
+      async function viewLogs() {
+          const res = await fetch(`/api/runs/${runId}/logs`);
+          if (res.ok) alert(await res.text());
+      }
+
+      function sortTable(key) {
+          if (sortConfig.key === key) sortConfig.direction = sortConfig.direction === 'asc' ? 'desc' : 'asc';
+          else { sortConfig.key = key; sortConfig.direction = 'asc'; }
+          const sorted = [...currentFiltered].sort((a, b) => {
+              if (a[key] < b[key]) return sortConfig.direction === 'asc' ? -1 : 1;
+              if (a[key] > b[key]) return sortConfig.direction === 'asc' ? 1 : -1;
+              return 0;
+          });
+          renderTable(sorted, false);
+      }
+
+      function toggleHeatmap() {
+          const showHeat = document.getElementById('heatmapToggle').checked;
+          if (showHeat) { map.removeLayer(markerCluster); map.addLayer(heatLayer); }
+          else { map.removeLayer(heatLayer); map.addLayer(markerCluster); }
+      }
+
+      function renderAnalytics(findings) {
+          const typeCtx = document.getElementById('typeChart').getContext('2d');
+          const qualCtx = document.getElementById('qualityChart').getContext('2d');
+
+          const typeCounts = {};
+          findings.forEach(f => typeCounts[f.business_type] = (typeCounts[f.business_type] || 0) + 1);
+
+          new Chart(typeCtx, {
+              type: 'doughnut',
+              data: {
+                  labels: Object.keys(typeCounts),
+                  datasets: [{ data: Object.values(typeCounts), backgroundColor: ['#6366f1', '#10b981', '#f59e0b', '#ef4444', '#8b5cf6'], borderWidth: 0 }]
+              },
+              options: { plugins: { legend: { display: false } }, cutout: '70%' }
+          });
+
+          const scores = findings.map(f => f.quality_score);
+          const avg = scores.length ? (scores.reduce((a,b)=>a+b,0)/scores.length).toFixed(1) : 0;
+          document.getElementById('statAvgQuality').textContent = avg + '%';
+
+          new Chart(qualCtx, {
+              type: 'bar',
+              data: { labels: ['Completeness'], datasets: [{ data: [avg], backgroundColor: '#6366f1' }] },
+              options: { scales: { y: { min: 0, max: 100, display: false } }, plugins: { legend: { display: false } } }
+          });
       }
 
       function renderHistogram(findings) {
         const ctx = document.getElementById("histChart").getContext("2d");
-        const distances = findings
-          .map((f) => f.distance_miles)
-          .filter((d) => typeof d === "number" && !Number.isNaN(d));
-
-        if (distances.length === 0) return;
-
-        const bins = 20;
-        const max = Math.max(...distances) || 1;
-        const step = max / bins;
-
-        const counts = new Array(bins).fill(0);
-        for (const d of distances) {
-          const idx = Math.min(bins - 1, Math.floor(d / step));
-          counts[idx] += 1;
-        }
-
-        const labels = counts.map((_, i) => (i * step).toFixed(1));
-
-        if (window.myChart) window.myChart.destroy();
-        window.myChart = new Chart(ctx, {
-          type: "bar",
-          data: {
-            labels,
-            datasets: [{
-              label: "Count",
-              data: counts,
-              backgroundColor: "rgba(99, 102, 241, 0.6)",
-              borderColor: "#6366f1",
-              borderWidth: 1,
-              borderRadius: 4
-            }],
-          },
-          options: {
-            responsive: true,
-            maintainAspectRatio: false,
-            plugins: {
-              legend: { display: false },
-              tooltip: {
-                  backgroundColor: '#111827',
-                  titleColor: '#e5e7eb',
-                  bodyColor: '#e5e7eb',
-                  borderColor: '#374151',
-                  borderWidth: 1
-              }
-            },
-            scales: {
-              x: { grid: { display: false }, ticks: { color: "#64748b" } },
-              y: { grid: { color: "rgba(255,255,255,0.05)" }, ticks: { color: "#64748b" } },
-            },
-          },
+        const dists = findings.map(f => f.distance_miles).filter(d => !isNaN(d));
+        if (!dists.length) return;
+        const bins = 15, max = Math.max(...dists) || 1, step = max/bins, counts = new Array(bins).fill(0);
+        dists.forEach(d => counts[Math.min(bins-1, Math.floor(d/step))]++);
+        new Chart(ctx, {
+          type: 'bar',
+          data: { labels: counts.map((_,i)=>(i*step).toFixed(1)), datasets: [{ label: 'Count', data: counts, backgroundColor: 'rgba(99, 102, 241, 0.6)' }] },
+          options: { responsive: true, maintainAspectRatio: false, scales: { x: { ticks: { color: '#64748b' } }, y: { display: false } } }
         });
       }
 
       function renderMap(findings) {
-        const mapElement = document.getElementById("map");
-        if (mapElement._leaflet_id) return; // Already init
-
-        const map = L.map("map");
-        L.tileLayer("https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png", {
-          maxZoom: 19,
-          attribution: "© OpenStreetMap",
-          className: 'map-tiles'
-        }).addTo(map);
-
-        const markers = [];
+        if (!map) {
+            map = L.map("map");
+            L.tileLayer("https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png", { maxZoom: 19 }).addTo(map);
+            markerCluster = L.markerClusterGroup(); heatLayer = L.heatLayer([], {radius: 25});
+            map.addLayer(markerCluster);
+        }
+        markerCluster.clearLayers(); const heatPoints = [], bounds = [];
         findings.forEach(f => {
           if (f.latitude && f.longitude) {
-            const marker = L.marker([f.latitude, f.longitude])
-              .bindPopup(`<b>${f.name}</b><br>${f.business_type}<br>Dist: ${f.distance_miles.toFixed(2)} mi`);
-            marker.addTo(map);
-            markers.push([f.latitude, f.longitude]);
+            const m = L.marker([f.latitude, f.longitude]).bindPopup(`<b>${f.name}</b>`);
+            markerCluster.addLayer(m); heatPoints.push([f.latitude, f.longitude, 1]); bounds.push([f.latitude, f.longitude]);
           }
         });
-
-        if (markers.length > 0) {
-          map.fitBounds(markers);
-        } else {
-          map.setView([0,0], 2);
-        }
+        heatLayer.setLatLngs(heatPoints);
+        if (bounds.length) map.fitBounds(bounds);
       }
 
-      function renderTable(findings) {
+      function renderTable(findings, updateFiltered = true) {
+        if (updateFiltered) currentFiltered = findings;
         const tbody = document.getElementById("findingsTbody");
         tbody.innerHTML = "";
         findings.forEach(f => {
-          const website = f.website && f.website !== "N/A" ? f.website : null;
-          const websiteCell = website
-            ? `<a class="text-indigo-400 hover:text-indigo-300 transition" target="_blank" href="${website}">Visit</a>`
-            : '<span class="text-slate-600">-</span>';
-
+          const enrichment = f.ai_summary ? `<div class="text-[10px] text-emerald-400 italic mt-1">${f.ai_summary}</div>` : '';
+          const website = f.website && f.website !== "N/A" ? `<a class="text-indigo-400" target="_blank" href="${f.website}">Visit</a>` : '-';
           const tr = document.createElement("tr");
           tr.innerHTML = `
-            <td class="py-3 px-2 font-mono text-indigo-300">${f.distance_miles.toFixed(2)}</td>
-            <td class="py-3 font-medium text-white">${f.name}</td>
-            <td class="py-3 text-slate-400">${f.business_type}</td>
-            <td class="py-3 text-slate-400">${f.phone}</td>
-            <td class="py-3 text-right">${websiteCell}</td>
+            <td class="py-4 px-2 font-mono text-indigo-300">${f.distance_miles.toFixed(2)}</td>
+            <td class="py-4 font-medium text-white">${f.name}</td>
+            <td class="py-4 text-slate-400 text-xs">${f.business_type}</td>
+            <td class="py-4">${enrichment}</td>
+            <td class="py-4 text-right">${website}</td>
           `;
           tbody.appendChild(tr);
         });
+        document.getElementById('findingsCountLabel').textContent = findings.length;
       }
 
       function exportData(format) {
-          if (!allFindings || allFindings.length === 0) return alert('No findings to export');
-
+          if (!allFindings.length) return alert('No findings');
           if (format === 'json') {
               const dataStr = "data:text/json;charset=utf-8," + encodeURIComponent(JSON.stringify(allFindings, null, 2));
-              const downloadAnchorNode = document.createElement('a');
-              downloadAnchorNode.setAttribute("href", dataStr);
-              downloadAnchorNode.setAttribute("download", "zcrawler_findings_" + runId + ".json");
-              document.body.appendChild(downloadAnchorNode);
-              downloadAnchorNode.click();
-              downloadAnchorNode.remove();
-          } else if (format === 'csv') {
-              const headers = Object.keys(allFindings[0]).join(",");
-              const rows = allFindings.map(f => Object.values(f).map(v => `"${v}"`).join(",")).join("\n");
-              const csvContent = "data:text/csv;charset=utf-8," + headers + "\n" + rows;
-              const encodedUri = encodeURI(csvContent);
-              const link = document.createElement("a");
-              link.setAttribute("href", encodedUri);
-              link.setAttribute("download", "zcrawler_findings_" + runId + ".csv");
-              document.body.appendChild(link);
-              link.click();
-              link.remove();
+              const a = document.createElement('a'); a.setAttribute("href", dataStr); a.setAttribute("download", "findings.json"); a.click();
           }
       }
 
+      document.getElementById('searchInput').addEventListener('input', (e) => {
+          const q = e.target.value.toLowerCase();
+          const filtered = allFindings.filter(f => f.name.toLowerCase().includes(q) || f.business_type.toLowerCase().includes(q));
+          renderTable(filtered); renderMap(filtered);
+      });
+
       async function loadRun() {
-        const [detailsRes, findingsRes] = await Promise.all([
-          fetch(`/api/runs/${runId}`),
-          fetch(`/api/runs/${runId}/findings`)
-        ]);
-
-        if (!detailsRes.ok) throw new Error("Failed loading run");
-        const details = await detailsRes.json();
-
-        if (!findingsRes.ok) throw new Error("Failed loading findings");
-        allFindings = await findingsRes.json();
-
+        const [dRes, fRes] = await Promise.all([fetch(`/api/runs/${runId}`), fetch(`/api/runs/${runId}/findings`)]);
+        const details = await dRes.json(); allFindings = await fRes.json();
         updateStatusBadge(details.status);
         document.getElementById('statFindings').textContent = allFindings.length;
         document.getElementById('statTemplate').textContent = details.template_key;
-        document.getElementById('statStarted').textContent = details.started_at ? new Date(details.started_at).toLocaleString() : '-';
-        document.getElementById('statCompleted').textContent = details.completed_at ? new Date(details.completed_at).toLocaleString() : '-';
-        document.getElementById('findingsCountLabel').textContent = allFindings.length;
-
-        if (details.error_message) {
-            document.getElementById('errorAlert').classList.remove('hidden');
-            document.getElementById('errorMessage').textContent = details.error_message;
-        }
-
-        renderHistogram(allFindings);
-        renderMap(allFindings);
-        renderTable(allFindings);
+        renderAnalytics(allFindings); renderHistogram(allFindings); renderMap(allFindings); renderTable(allFindings);
       }
-
       loadRun().catch(console.error);
     </script>
   </body>

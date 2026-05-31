@@ -77,6 +77,12 @@ class CrawlFindingResponse(BaseModel):
     distance_miles: float
     quality_score: int
     source: Optional[str] = None
+
+    # Enrichment
+    description: Optional[str] = None
+    social_links: Optional[str] = None
+    ai_summary: Optional[str] = None
+
     created_at: datetime
 
     class Config:

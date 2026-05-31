@@ -4,337 +4,173 @@
     <meta charset="UTF-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
     <title>Zcrawler Dashboard</title>
-    <link
-      rel="stylesheet"
-      href="https://cdn.jsdelivr.net/npm/tailwindcss@3.4.1/dist/tailwind.min.css"
-    />
+    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/tailwindcss@3.4.1/dist/tailwind.min.css" />
     <style>
-      body {
-        background: #0b1220;
-        color: #e5e7eb;
-        font-family: ui-sans-serif, system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, "Helvetica Neue", Arial, "Noto Sans", sans-serif;
-      }
-      .card {
-        background: rgba(17, 24, 39, 0.8);
-        border: 1px solid rgba(255, 255, 255, 0.08);
-        border-radius: 12px;
-        transition: all 0.2s ease;
-      }
-      .card:hover {
-        border-color: rgba(99, 102, 241, 0.4);
-      }
-      input, select, textarea {
-        background: #111827 !important;
-        border: 1px solid #374151 !important;
-        color: #f3f4f6 !important;
-      }
-      input:focus, select:focus, textarea:focus {
-        border-color: #6366f1 !important;
-        outline: none !important;
-        ring: 2px solid rgba(99, 102, 241, 0.2);
-      }
-      .btn-primary {
-        background: #4f46e5;
-        transition: background 0.2s;
-      }
-      .btn-primary:hover {
-        background: #4338ca;
-      }
+      body { background: #0b1220; color: #e5e7eb; font-family: ui-sans-serif, system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, "Helvetica Neue", Arial, "Noto Sans", sans-serif; }
+      .card { background: rgba(17, 24, 39, 0.8); border: 1px solid rgba(255, 255, 255, 0.08); border-radius: 12px; transition: all 0.2s ease; }
+      .card:hover { border-color: rgba(99, 102, 241, 0.4); }
+      input, select, textarea { background: #111827 !important; border: 1px solid #374151 !important; color: #f3f4f6 !important; }
+      input:focus, select:focus, textarea:focus { border-color: #6366f1 !important; outline: none !important; ring: 2px solid rgba(99, 102, 241, 0.2); }
+      .btn-primary { background: #4f46e5; transition: background 0.2s; }
+      .btn-primary:hover { background: #4338ca; }
     </style>
   </head>
   <body class="min-h-screen">
     <div class="max-w-7xl mx-auto p-6 space-y-8">
-      <!-- Header -->
       <header class="flex items-center justify-between">
-        <div>
-          <h1 class="text-3xl font-bold text-white tracking-tight">Zcrawler</h1>
-          <p class="text-slate-400 mt-1">Automate your data extraction workflows.</p>
-        </div>
-        <div class="bg-slate-900 px-4 py-2 rounded-lg border border-slate-800">
-            <span id="statusLine" class="text-sm font-medium text-indigo-400 italic">Connecting...</span>
-        </div>
+        <div><h1 class="text-3xl font-bold text-white tracking-tight" onclick="location.reload()" style="cursor:pointer">Zcrawler</h1><p class="text-slate-400 mt-1">Automate your data extraction workflows.</p></div>
+        <div class="bg-slate-900 px-4 py-2 rounded-lg border border-slate-800"><span id="statusLine" class="text-sm font-medium text-indigo-400 italic">Connecting...</span></div>
       </header>
 
+      <div class="relative max-w-xl">
+          <input id="globalSearch" type="text" placeholder="Search definitions or history..." class="w-full pl-4 pr-4 py-2 rounded-lg border border-slate-800 bg-slate-900 focus:border-indigo-500 transition text-sm">
+      </div>
+
       <div class="grid grid-cols-1 xl:grid-cols-3 gap-8">
-        <!-- Left Column: Crawler Definitions -->
         <div class="xl:col-span-2 space-y-8">
           <section class="card p-6">
             <div class="flex items-center justify-between mb-6">
               <h2 class="text-xl font-semibold text-white">Crawler Definitions</h2>
-              <button onclick="toggleDefForm()" class="text-sm bg-indigo-600/20 text-indigo-300 px-3 py-1 rounded hover:bg-indigo-600/30 transition">
-                + New Definition
-              </button>
+              <button onclick="toggleDefForm()" class="text-sm bg-indigo-600/20 text-indigo-300 px-3 py-1 rounded hover:bg-indigo-600/30 transition">+ New Definition</button>
             </div>
 
             <div id="defFormContainer" class="hidden mb-8 p-4 bg-slate-900/50 rounded-lg border border-slate-700 space-y-4">
-              <h3 class="font-medium">New Crawler Definition</h3>
+              <h3 id="formTitle" class="font-medium text-white">New Crawler Definition</h3>
+              <input id="defId" type="hidden">
               <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
-                <div>
-                  <label class="block text-xs uppercase text-slate-500 font-bold mb-1">Name</label>
-                  <input id="defName" type="text" placeholder="e.g. Valpo Coffee Shops" class="w-full rounded px-3 py-2 text-sm">
+                <div><label class="block text-xs uppercase text-slate-500 font-bold mb-1">Name</label><input id="defName" type="text" class="w-full rounded px-3 py-2 text-sm"></div>
+                <div><label class="block text-xs uppercase text-slate-500 font-bold mb-1">Template</label><select id="defTemplate" onchange="updateTemplateForm()" class="w-full rounded px-3 py-2 text-sm text-white bg-slate-900"><option value="osm_business_crawler">OSM Business Crawler</option><option value="directory_scraper">Directory Scraper</option></select></div>
+              </div>
+              <div><label class="block text-xs uppercase text-slate-500 font-bold mb-1">Description</label><textarea id="defDesc" class="w-full rounded px-3 py-2 text-sm h-16"></textarea></div>
+
+              <div class="space-y-4">
+                <div class="flex items-center justify-between"><h4 class="text-xs font-bold text-slate-500 uppercase">Configuration</h4><button onclick="toggleAdvanced()" class="text-[10px] text-indigo-400 hover:underline">Toggle Advanced (JSON)</button></div>
+
+                <div id="osmConfig" class="grid grid-cols-2 md:grid-cols-4 gap-4">
+                    <div class="col-span-2"><label class="block text-[10px] text-slate-600 font-bold mb-1">Categories (comma sep)</label><input id="confCategories" type="text" class="w-full rounded px-3 py-2 text-sm"></div>
+                    <div><label class="block text-[10px] text-slate-600 font-bold mb-1">Radius (Mi)</label><input id="confRadius" type="number" step="0.1" class="w-full rounded px-3 py-2 text-sm"></div>
+                    <div><label class="block text-[10px] text-slate-600 font-bold mb-1">Limit</label><input id="confLimit" type="number" class="w-full rounded px-3 py-2 text-sm"></div>
+                    <div class="col-span-2"><label class="block text-[10px] text-slate-600 font-bold mb-1">City Query</label><input id="confCity" type="text" class="w-full rounded px-3 py-2 text-sm"></div>
                 </div>
-                <div>
-                  <label class="block text-xs uppercase text-slate-500 font-bold mb-1">Template</label>
-                  <select id="defTemplate" class="w-full rounded px-3 py-2 text-sm">
-                    <option value="osm_business_crawler">OSM Business Crawler</option>
-                  </select>
-                </div>
+
+                <div id="dirConfig" class="hidden"><label class="block text-[10px] text-slate-600 font-bold mb-1">Scrape URL</label><input id="confUrl" type="text" class="w-full rounded px-3 py-2 text-sm"></div>
+
+                <div id="advancedConfig" class="hidden"><label class="block text-[10px] text-slate-600 font-bold mb-1">Raw Config (JSON)</label><textarea id="defConfig" class="w-full rounded px-3 py-2 text-sm font-mono h-32"></textarea></div>
               </div>
-              <div>
-                <label class="block text-xs uppercase text-slate-500 font-bold mb-1">Description</label>
-                <textarea id="defDesc" placeholder="Briefly describe what this crawler does..." class="w-full rounded px-3 py-2 text-sm h-20"></textarea>
-              </div>
-              <div>
-                <label class="block text-xs uppercase text-slate-500 font-bold mb-1">Config (JSON)</label>
-                <textarea id="defConfig" class="w-full rounded px-3 py-2 text-sm font-mono h-32" placeholder='{ "reference_address": "...", "city_query": "..." }'></textarea>
-              </div>
-              <div class="flex justify-end gap-3">
+
+              <div class="flex justify-end gap-3 pt-4 border-t border-slate-800">
                 <button onclick="toggleDefForm()" class="px-4 py-2 text-sm text-slate-400 hover:text-white">Cancel</button>
-                <button onclick="saveDefinition()" class="btn-primary px-6 py-2 rounded text-sm font-semibold">Save Definition</button>
+                <button id="saveBtn" onclick="saveDefinition()" class="btn-primary px-6 py-2 rounded text-sm font-semibold text-white">Save Definition</button>
               </div>
             </div>
 
-            <div class="overflow-hidden">
-              <table class="w-full text-sm">
-                <thead>
-                  <tr class="text-left text-slate-500 border-b border-slate-800">
-                    <th class="pb-3 font-semibold uppercase tracking-wider">Name</th>
-                    <th class="pb-3 font-semibold uppercase tracking-wider">Template</th>
-                    <th class="pb-3 font-semibold uppercase tracking-wider">Created</th>
-                    <th class="pb-3 text-right">Actions</th>
-                  </tr>
-                </thead>
-                <tbody id="defTbody" class="divide-y divide-slate-800">
-                  <!-- Definitions dynamic -->
-                </tbody>
-              </table>
-            </div>
+            <div class="overflow-hidden"><table class="w-full text-sm"><thead><tr class="text-left text-slate-500 border-b border-slate-800"><th class="pb-3 font-semibold uppercase">Name</th><th class="pb-3 font-semibold uppercase">Template</th><th class="pb-3 font-semibold uppercase">Created</th><th class="pb-3 text-right">Actions</th></tr></thead><tbody id="defTbody" class="divide-y divide-slate-800"></tbody></table></div>
           </section>
 
           <section class="card p-6">
             <h2 class="text-xl font-semibold text-white mb-6">Execution History</h2>
-            <div class="overflow-hidden">
-              <table class="w-full text-sm">
-                <thead>
-                  <tr class="text-left text-slate-500 border-b border-slate-800">
-                    <th class="pb-3 font-semibold uppercase tracking-wider">Run ID</th>
-                    <th class="pb-3 font-semibold uppercase tracking-wider">Status</th>
-                    <th class="pb-3 font-semibold uppercase tracking-wider">Findings</th>
-                    <th class="pb-3 font-semibold uppercase tracking-wider">Date</th>
-                    <th class="pb-3 text-right">Actions</th>
-                  </tr>
-                </thead>
-                <tbody id="runsTbody" class="divide-y divide-slate-800">
-                  <!-- Runs dynamic -->
-                </tbody>
-              </table>
-            </div>
+            <div class="overflow-hidden"><table class="w-full text-sm"><thead><tr class="text-left text-slate-500 border-b border-slate-800"><th class="pb-3 font-semibold uppercase">Run ID</th><th class="pb-3 font-semibold uppercase">Status</th><th class="pb-3 font-semibold uppercase">Findings</th><th class="pb-3 font-semibold uppercase">Date</th><th class="pb-3 text-right">Actions</th></tr></thead><tbody id="runsTbody" class="divide-y divide-slate-800"></tbody></table></div>
           </section>
         </div>
 
-        <!-- Right Column: Quick Actions -->
         <div class="space-y-8">
           <section class="card p-6">
             <h2 class="text-xl font-semibold text-white mb-6">Launch Crawler</h2>
             <form id="createRunForm" class="space-y-4">
-              <div>
-                <label class="block text-xs uppercase text-slate-500 font-bold mb-1">Select Definition (Optional)</label>
-                <select id="runDefId" class="w-full rounded px-3 py-2 text-sm">
-                  <option value="">-- Ad-hoc Run --</option>
-                  <!-- Definitions dynamic -->
-                </select>
-              </div>
-
+              <div><label class="block text-xs uppercase text-slate-500 font-bold mb-1">Select Definition (Optional)</label><select id="runDefId" class="w-full rounded px-3 py-2 text-sm text-white bg-slate-900"><option value="">-- Ad-hoc Run --</option></select></div>
               <div id="adhocFields" class="space-y-4 pt-4 border-t border-slate-800">
-                <div>
-                  <label class="block text-xs uppercase text-slate-500 font-bold mb-1">Reference Address</label>
-                  <input id="referenceAddress" type="text" value="410 Glendale Blvd, Valparaiso, IN" class="w-full rounded px-3 py-2 text-sm">
-                </div>
-                <div>
-                  <label class="block text-xs uppercase text-slate-500 font-bold mb-1">City Query</label>
-                  <input id="cityQuery" type="text" value="Valparaiso, Indiana, USA" class="w-full rounded px-3 py-2 text-sm">
-                </div>
+                <div><label class="block text-xs uppercase text-slate-500 font-bold mb-1">Reference Address</label><input id="referenceAddress" type="text" value="410 Glendale Blvd, Valparaiso, IN" class="w-full rounded px-3 py-2 text-sm"></div>
+                <div><label class="block text-xs uppercase text-slate-500 font-bold mb-1">City Query</label><input id="cityQuery" type="text" value="Valparaiso, Indiana, USA" class="w-full rounded px-3 py-2 text-sm"></div>
               </div>
-
-              <div class="grid grid-cols-2 gap-4">
-                  <div class="flex items-center gap-2">
-                    <input id="enableReverseGeocode" type="checkbox" checked class="h-4 w-4 bg-slate-900 border-slate-700 rounded text-indigo-600 focus:ring-indigo-600">
-                    <label class="text-xs text-slate-400">Reverse Geocode</label>
-                  </div>
-                  <div>
-                    <label class="block text-[10px] uppercase text-slate-600 font-bold">Max Lookups</label>
-                    <input id="maxReverseGeocodeLookups" type="number" value="10" class="w-full rounded px-2 py-1 text-xs mt-1">
-                  </div>
-              </div>
-
-              <button type="submit" class="w-full py-3 btn-primary rounded-lg font-bold text-lg shadow-lg shadow-indigo-500/20">
-                Execute Run
-              </button>
+              <div class="grid grid-cols-2 gap-4"><div class="flex items-center gap-2"><input id="enableReverseGeocode" type="checkbox" checked class="h-4 w-4 bg-slate-900 border-slate-700 rounded text-indigo-600"> <label class="text-xs text-slate-400">Reverse Geocode</label></div><div><input id="maxReverseGeocodeLookups" type="number" value="10" class="w-full rounded px-2 py-1 text-xs"></div></div>
+              <button type="submit" class="w-full py-3 btn-primary rounded-lg font-bold text-lg text-white shadow-lg shadow-indigo-500/20 transition-transform active:scale-[0.98]">Execute Run</button>
             </form>
           </section>
-
           <section class="card p-6 bg-indigo-600/5 border-indigo-500/20">
             <h3 class="text-indigo-300 font-bold text-sm uppercase mb-3">Project Statistics</h3>
-            <div class="grid grid-cols-2 gap-4">
-              <div>
-                <p class="text-slate-500 text-xs">Total Runs</p>
-                <p id="statTotalRuns" class="text-2xl font-bold text-white">0</p>
-              </div>
-              <div>
-                <p class="text-slate-500 text-xs">Findings Count</p>
-                <p id="statFindings" class="text-2xl font-bold text-white">0</p>
-              </div>
-            </div>
+            <div class="grid grid-cols-2 gap-4"><div><p class="text-slate-500 text-xs">Total Runs</p><p id="statTotalRuns" class="text-2xl font-bold text-white">0</p></div><div><p class="text-slate-500 text-xs">Total Findings</p><p id="statFindings" class="text-2xl font-bold text-white">0</p></div></div>
+            <div class="pt-4 mt-4 border-t border-slate-800 flex justify-between text-xs"><span class="text-slate-400">Success Rate</span><span id="statSuccessRate" class="text-emerald-400 font-bold">0%</span></div>
           </section>
         </div>
       </div>
     </div>
 
     <script>
-      function toggleDefForm() {
-        const container = document.getElementById('defFormContainer');
-        container.classList.toggle('hidden');
-      }
+      let definitions = [], runs = [];
+      function toggleDefForm() { const c = document.getElementById('defFormContainer'); c.classList.toggle('hidden'); if (c.classList.contains('hidden')) clearForm(); }
+      function clearForm() { ['defId','defName','defDesc','confCategories','confCity','confRadius','confLimit','confUrl','defConfig'].forEach(id => document.getElementById(id).value = ''); document.getElementById('formTitle').textContent = 'New Crawler Definition'; document.getElementById('saveBtn').textContent = 'Save Definition'; }
+      function updateTemplateForm() { const t = document.getElementById('defTemplate').value; document.getElementById('osmConfig').classList.toggle('hidden', t !== 'osm_business_crawler'); document.getElementById('dirConfig').classList.toggle('hidden', t !== 'directory_scraper'); }
+      function toggleAdvanced() { ['osmConfig','dirConfig','advancedConfig'].forEach(id => { if (id === 'advancedConfig') document.getElementById(id).classList.toggle('hidden'); else updateTemplateForm(); }); }
 
       async function saveDefinition() {
-        const body = {
-          name: document.getElementById('defName').value,
-          description: document.getElementById('defDesc').value,
-          template_key: document.getElementById('defTemplate').value,
-          config_json: document.getElementById('defConfig').value,
-        };
-        const res = await fetch('/api/definitions', {
-          method: 'POST',
-          headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify(body),
-        });
-        if (res.ok) {
-          toggleDefForm();
-          fetchData();
-        } else {
-          alert('Failed to save definition');
-        }
+        const id = document.getElementById('defId').value, t = document.getElementById('defTemplate').value;
+        let config = {};
+        if (!document.getElementById('advancedConfig').classList.contains('hidden')) { try { config = JSON.parse(document.getElementById('defConfig').value); } catch(e) { return alert('Invalid JSON'); } }
+        else if (t === 'osm_business_crawler') config = { categories: document.getElementById('confCategories').value, city_query: document.getElementById('confCity').value, radius_mi: parseFloat(document.getElementById('confRadius').value), limit: parseInt(document.getElementById('confLimit').value) };
+        else config = { url: document.getElementById('confUrl').value };
+
+        const body = { name: document.getElementById('defName').value, description: document.getElementById('defDesc').value, template_key: t, config_json: JSON.stringify(config) };
+        const res = await fetch(id ? `/api/definitions/${id}` : '/api/definitions', { method: id ? 'PUT' : 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(body) });
+        if (res.ok) { toggleDefForm(); fetchData(); }
+      }
+
+      async function deleteDef(id) { if (confirm('Delete definition?')) { await fetch(`/api/definitions/${id}`, { method: 'DELETE' }); fetchData(); } }
+      async function deleteRun(id) { if (confirm('Delete run?')) { await fetch(`/api/runs/${id}`, { method: 'DELETE' }); fetchData(); } }
+      function editDef(id) {
+          const d = definitions.find(x => x.id === id); if (!d) return;
+          clearForm(); document.getElementById('defFormContainer').classList.remove('hidden');
+          document.getElementById('formTitle').textContent = 'Edit Definition'; document.getElementById('saveBtn').textContent = 'Update';
+          document.getElementById('defId').value = d.id; document.getElementById('defName').value = d.name; document.getElementById('defDesc').value = d.description;
+          document.getElementById('defTemplate').value = d.template_key; document.getElementById('defConfig').value = d.config_json;
+          const c = JSON.parse(d.config_json);
+          document.getElementById('confCategories').value = c.categories || ''; document.getElementById('confCity').value = c.city_query || '';
+          document.getElementById('confRadius').value = c.radius_mi || ''; document.getElementById('confLimit').value = c.limit || '';
+          document.getElementById('confUrl').value = c.url || ''; updateTemplateForm();
       }
 
       function renderDefinitions(defs) {
-        const tbody = document.getElementById('defTbody');
-        const select = document.getElementById('runDefId');
-        tbody.innerHTML = '';
-
-        // Preserve "Ad-hoc" option
-        select.innerHTML = '<option value="">-- Ad-hoc Run --</option>';
-
-        defs.forEach(def => {
+        definitions = defs; const q = document.getElementById('globalSearch').value.toLowerCase();
+        const filtered = defs.filter(d => d.name.toLowerCase().includes(q));
+        const tbody = document.getElementById('defTbody'); const select = document.getElementById('runDefId');
+        tbody.innerHTML = ''; select.innerHTML = '<option value="">-- Ad-hoc Run --</option>';
+        filtered.forEach(d => {
           const tr = document.createElement('tr');
-          tr.innerHTML = `
-            <td class="py-4">
-              <div class="font-medium text-white">${def.name}</div>
-              <div class="text-xs text-slate-500">${def.description || 'No description'}</div>
-            </td>
-            <td class="py-4 text-slate-400 font-mono text-xs">${def.template_key}</td>
-            <td class="py-4 text-slate-500 text-xs">${new Date(def.created_at).toLocaleDateString()}</td>
-            <td class="py-4 text-right">
-              <button onclick="loadDefIntoRun('${def.id}')" class="text-indigo-400 hover:text-indigo-300 text-xs font-semibold">Use</button>
-            </td>
-          `;
+          tr.innerHTML = `<td class="py-4"><div class="font-medium text-white">${d.name}</div><div class="text-xs text-slate-500">${d.description||''}</div></td><td class="py-4 text-slate-400 text-xs">${d.template_key}</td><td class="py-4 text-slate-500 text-xs">${new Date(d.created_at).toLocaleDateString()}</td><td class="py-4 text-right space-x-2"><button onclick="loadDefIntoRun('${d.id}')" class="text-indigo-400 font-semibold">Use</button><button onclick="editDef('${d.id}')" class="text-slate-400 font-semibold">Edit</button><button onclick="deleteDef('${d.id}')" class="text-red-400 font-semibold">Del</button></td>`;
           tbody.appendChild(tr);
-
-          const opt = document.createElement('option');
-          opt.value = def.id;
-          opt.textContent = def.name;
-          select.appendChild(opt);
+          const opt = document.createElement('option'); opt.value = d.id; opt.textContent = d.name; select.appendChild(opt);
         });
       }
 
-      async function loadDefIntoRun(id) {
-        document.getElementById('runDefId').value = id;
-        // Optional: populate ad-hoc fields with def config if needed
-      }
-
-      function renderRuns(runs) {
-        const tbody = document.getElementById("runsTbody");
-        tbody.innerHTML = "";
-        let totalFindings = 0;
-
-        runs.forEach(run => {
-          totalFindings += (run.findings_count || 0);
+      function renderRuns(runList) {
+        runs = runList; const q = document.getElementById('globalSearch').value.toLowerCase();
+        const filtered = runList.filter(r => r.id.toLowerCase().includes(q) || r.status.toLowerCase().includes(q));
+        const tbody = document.getElementById("runsTbody"); tbody.innerHTML = "";
+        let total = 0, success = 0;
+        runList.forEach(r => { total += (r.findings_count||0); if (r.status === 'completed') success++; });
+        filtered.forEach(r => {
           const tr = document.createElement("tr");
-          const statusColors = {
-            'completed': 'bg-emerald-500/10 text-emerald-400 border-emerald-500/20',
-            'failed': 'bg-red-500/10 text-red-400 border-red-500/20',
-            'running': 'bg-amber-500/10 text-amber-400 border-amber-500/20',
-            'queued': 'bg-slate-500/10 text-slate-400 border-slate-500/20'
-          };
-          const colorClass = statusColors[run.status] || statusColors['queued'];
-
-          tr.innerHTML = `
-            <td class="py-4 font-mono text-xs text-slate-400">${run.id.substring(0,8)}...</td>
-            <td class="py-4">
-              <span class="px-2 py-0.5 rounded border text-[10px] font-bold uppercase ${colorClass}">${run.status}</span>
-            </td>
-            <td class="py-4 font-medium text-slate-300">${run.findings_count ?? 0}</td>
-            <td class="py-4 text-xs text-slate-500">${new Date(run.created_at).toLocaleString()}</td>
-            <td class="py-4 text-right">
-              <a class="text-indigo-400 hover:text-indigo-300 font-semibold text-xs" href="/runs/${run.id}">Details</a>
-            </td>
-          `;
+          tr.innerHTML = `<td class="py-4 font-mono text-xs text-slate-400">${r.id.substring(0,8)}</td><td class="py-4"><span class="px-2 py-0.5 rounded border text-[10px] uppercase">${r.status}</span></td><td class="py-4">${r.findings_count||0}</td><td class="py-4 text-xs text-slate-500">${new Date(r.created_at).toLocaleString()}</td><td class="py-4 text-right space-x-3"><a class="text-indigo-400 font-semibold text-xs" href="/runs/${r.id}">Details</a><button onclick="deleteRun('${r.id}')" class="text-red-400 font-semibold text-xs">Del</button></td>`;
           tbody.appendChild(tr);
         });
-
-        document.getElementById('statTotalRuns').textContent = runs.length;
-        document.getElementById('statFindings').textContent = totalFindings;
-
-        if (runs.length > 0) {
-            document.getElementById("statusLine").textContent = `Latest: ${runs[0].status} (${runs[0].findings_count} findings)`;
-        } else {
-            document.getElementById("statusLine").textContent = "Ready";
-        }
+        document.getElementById('statTotalRuns').textContent = runList.length; document.getElementById('statFindings').textContent = total;
+        document.getElementById('statSuccessRate').textContent = (runList.length ? Math.round(success/runList.length*100) : 0) + '%';
+        if (runList.length) document.getElementById("statusLine").textContent = `Latest: ${runList[0].status}`;
       }
 
       async function fetchData() {
-        const [defsRes, runsRes] = await Promise.all([
-          fetch('/api/definitions'),
-          fetch('/api/runs')
-        ]);
-        if (defsRes.ok) renderDefinitions(await defsRes.json());
-        if (runsRes.ok) renderRuns(await runsRes.json());
+        const [dRes, rRes] = await Promise.all([fetch('/api/definitions'), fetch('/api/runs')]);
+        if (dRes.ok) renderDefinitions(await dRes.json()); if (rRes.ok) renderRuns(await rRes.json());
       }
 
+      document.getElementById('globalSearch').addEventListener('input', () => { renderDefinitions(definitions); renderRuns(runs); });
       document.getElementById("createRunForm").addEventListener("submit", async (e) => {
-        e.preventDefault();
-        const body = {
-          definition_id: document.getElementById("runDefId").value || null,
-          reference_address: document.getElementById("referenceAddress").value,
-          city_query: document.getElementById("cityQuery").value,
-          enable_reverse_geocode: document.getElementById("enableReverseGeocode").checked,
-          max_reverse_geocode_lookups: parseInt(document.getElementById("maxReverseGeocodeLookups").value, 10),
-        };
-
-        const res = await fetch("/api/runs", {
-          method: "POST",
-          headers: { "Content-Type": "application/json" },
-          body: JSON.stringify(body),
-        });
-        if (res.ok) {
-          const data = await res.json();
-          window.location.href = `/runs/${data.id}`;
-        } else {
-          alert("Failed to launch run");
-        }
+        e.preventDefault(); const body = { definition_id: document.getElementById("runDefId").value || null, reference_address: document.getElementById("referenceAddress").value, city_query: document.getElementById("cityQuery").value, enable_reverse_geocode: document.getElementById("enableReverseGeocode").checked, max_reverse_geocode_lookups: parseInt(document.getElementById("maxReverseGeocodeLookups").value) };
+        const res = await fetch("/api/runs", { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify(body) });
+        if (res.ok) { const d = await res.json(); window.location.href = `/runs/${d.id}`; }
       });
 
-      // Show/hide ad-hoc fields based on selection
-      document.getElementById('runDefId').addEventListener('change', (e) => {
-          const adhoc = document.getElementById('adhocFields');
-          if (e.target.value) {
-              adhoc.classList.add('opacity-30', 'pointer-events-none');
-          } else {
-              adhoc.classList.remove('opacity-30', 'pointer-events-none');
-          }
-      });
-
-      fetchData();
-      setInterval(fetchData, 5000);
+      document.getElementById('runDefId').addEventListener('change', (e) => document.getElementById('adhocFields').classList.toggle('opacity-30', !!e.target.value));
+      fetchData(); setInterval(fetchData, 10000);
     </script>
   </body>
 </html>

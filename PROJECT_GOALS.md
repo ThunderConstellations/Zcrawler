@@ -43,3 +43,24 @@ Based on existing open-source projects:
 - **Data Export Capability**: Added client-side CSV and JSON export features to the run details page, allowing users to easily download their findings.
 
 - **Documentation & Entry Point**: Created a `run.py` entry point at the root to resolve module path issues and updated `README.md` with comprehensive setup and usage guides.
+
+- **Generalized OSM Crawler**: Renamed the core script to `osm_business_crawler.py` and added support for category filtering (`--categories`).
+- **Resource Management**: Added deletion capabilities for crawler definitions and run history (including disk cleanup) via the dashboard.
+- **Advanced Configuration**: Introduced a toggle-able configuration UI that supports both simple form fields (categories, city) and raw JSON overrides.
+
+- **Search & Filter**: Added a real-time search bar to the run details page, allowing users to filter findings by name, type, or phone number instantly.
+- **Enhanced Configuration**: Added support for `radius_mi` in crawler definitions, enabling users to limit searches to a specific radius around the reference address instead of the entire city.
+- **Improved Script Portability**: Removed hardcoded city names from output filenames and headers, making the crawler fully generic for any location.
+
+- **Radius-Based Search**: Enabled users to define a search radius (in miles) around the reference address, providing more granular control over the data extraction area.
+- **Interactive Findings Filtering**: Added a real-time search/filter bar to the run details page, allowing users to instantly find specific businesses by name, type, or phone number across both the table and map views.
+- **Script Generalization**: Renamed the core crawler to `osm_business_crawler.py` and removed hardcoded location strings from output files, making the platform location-agnostic.
+
+- **Map Clustering & Heatmaps**: Integrated `Leaflet.markercluster` for optimized marker handling and added a toggle-able density heatmap to the run details map.
+- **Advanced Table Interaction**: Implemented interactive client-side sorting for findings, allowing users to reorder data by distance, name, or type instantly.
+- **Crawler Definition Management**: Added cloning support for crawler definitions, enabling rapid duplication and modification of existing configurations.
+
+- **AI-Powered Enrichment**: Integrated a post-crawl enrichment phase that scrapes business websites for descriptions and social links, generating automated summaries for each finding.
+- **Multi-Template Support**: Added a generic directory scraper template, enabling the webapp to handle sources beyond OSM.
+- **Advanced Dashboard UX**: Improved the run details page with doughnut charts for category breakdown and completeness gauges.
+- **Cloning & Bulk Actions**: Users can now clone existing definitions and delete entire run histories including disk storage.

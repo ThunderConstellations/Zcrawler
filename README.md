@@ -61,7 +61,7 @@ The webapp will be available at `http://localhost:8000`.
 
 - `webapp/app/`: Backend logic (FastAPI, SQLAlchemy models, runner).
 - `webapp/templates/`: HTML templates for the dashboard and details pages.
-- `scripts/`: Core crawler scripts (OSM integration).
+- `scripts/osm_business_crawler.py`: Core OSM/Overpass business crawler script.
 - `output/`: Legacy output folder for business findings.
 - `run.py`: Main entry point for the application.
 

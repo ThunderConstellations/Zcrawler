@@ -96,8 +96,29 @@ class CrawlFinding(Base):
     quality_score: Mapped[int] = mapped_column(Integer, default=0)
     source: Mapped[str | None] = mapped_column(Text, nullable=True)
 
+    # --- New Enrichment Fields ---
+    description: Mapped[str | None] = mapped_column(Text, nullable=True)
+    social_links: Mapped[str | None] = mapped_column(Text, nullable=True) # JSON string
+    ai_summary: Mapped[str | None] = mapped_column(Text, nullable=True)
+
     created_at: Mapped[datetime] = mapped_column(
         DateTime, default=datetime.utcnow
     )
 
     run: Mapped[CrawlRun] = relationship(back_populates="findings")
+
+class CrawlerSchedule(Base):
+    __tablename__ = "crawler_schedules"
+
+    id: Mapped[str] = mapped_column(String(36), primary_key=True, default=new_id)
+    definition_id: Mapped[str] = mapped_column(
+        String(36), ForeignKey("crawler_definitions.id", ondelete="CASCADE")
+    )
+    name: Mapped[str] = mapped_column(String(100))
+    cron_expr: Mapped[str] = mapped_column(String(100)) # e.g. "0 0 * * *"
+    is_active: Mapped[bool] = mapped_column(Integer, default=1)
+
+    last_run_at: Mapped[datetime | None] = mapped_column(DateTime, nullable=True)
+    next_run_at: Mapped[datetime | None] = mapped_column(DateTime, nullable=True)
+
+    created_at: Mapped[datetime] = mapped_column(DateTime, default=datetime.utcnow)
