@@ -92,3 +92,21 @@ class CrawlFindingResponse(BaseModel):
 class RunResultsResponse(BaseModel):
     run: CrawlRunResponse
     findings: List[CrawlFindingResponse]
+
+class CrawlerScheduleBase(BaseModel):
+    definition_id: str
+    name: str
+    cron_expr: str
+    is_active: bool = True
+
+class CrawlerScheduleCreate(CrawlerScheduleBase):
+    pass
+
+class CrawlerScheduleResponse(CrawlerScheduleBase):
+    id: str
+    last_run_at: Optional[datetime] = None
+    next_run_at: Optional[datetime] = None
+    created_at: datetime
+
+    class Config:
+        from_attributes = True

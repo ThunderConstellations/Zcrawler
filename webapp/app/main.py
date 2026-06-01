@@ -22,7 +22,7 @@ from webapp.app.schemas import (
     CreateRunRequest,
     CrawlerDefinitionCreate,
     CrawlerDefinitionResponse,
-    CrawlRunResponse,
+    CrawlRunResponse, CrawlerScheduleCreate, CrawlerScheduleResponse,
 )
 from webapp.app.scheduler import scheduler_loop
 
@@ -165,3 +165,31 @@ def get_findings(run_id: str, db: Session = Depends(get_db)):
     run = db.get(CrawlRun, run_id)
     if run is None: raise HTTPException(status_code=404, detail="Run not found")
     return db.query(CrawlFinding).filter(CrawlFinding.run_id == run_id).order_by(CrawlFinding.distance_miles.asc()).all()
+
+# --- Schedules ---
+
+@app.get("/api/schedules", response_model=List[CrawlerScheduleResponse])
+def list_schedules(db: Session = Depends(get_db)):
+    return db.query(CrawlerSchedule).all()
+
+@app.post("/api/schedules", response_model=CrawlerScheduleResponse)
+def create_schedule(schedule: CrawlerScheduleCreate, db: Session = Depends(get_db)):
+    db_sched = CrawlerSchedule(
+        id=new_id(),
+        definition_id=schedule.definition_id,
+        name=schedule.name,
+        cron_expr=schedule.cron_expr,
+        is_active=1 if schedule.is_active else 0,
+    )
+    db.add(db_sched)
+    db.commit()
+    db.refresh(db_sched)
+    return db_sched
+
+@app.delete("/api/schedules/{schedule_id}")
+def delete_schedule(schedule_id: str, db: Session = Depends(get_db)):
+    db_sched = db.get(CrawlerSchedule, schedule_id)
+    if not db_sched: raise HTTPException(status_code=404, detail="Schedule not found")
+    db.delete(db_sched)
+    db.commit()
+    return {"status": "success"}

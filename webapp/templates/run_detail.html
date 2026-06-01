@@ -3,263 +3,185 @@
   <head>
     <meta charset="UTF-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-    <title>Run Details - Zcrawler</title>
+    <title>Run Details | Zcrawler</title>
     <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/tailwindcss@3.4.1/dist/tailwind.min.css" />
     <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" />
-    <link rel="stylesheet" href="https://unpkg.com/leaflet.markercluster@1.4.1/dist/MarkerCluster.css" />
-    <link rel="stylesheet" href="https://unpkg.com/leaflet.markercluster@1.4.1/dist/MarkerCluster.Default.css" />
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.1/css/all.min.css" />
     <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
-    <script src="https://unpkg.com/leaflet.markercluster@1.4.1/dist/leaflet.markercluster.js"></script>
-    <script src="https://unpkg.com/leaflet.heat@0.2.0/dist/leaflet-heat.js"></script>
-    <script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.1/dist/chart.umd.min.js"></script>
-
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
     <style>
-      body { background: #0b1220; color: #e5e7eb; font-family: ui-sans-serif, system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, "Helvetica Neue", Arial, "Noto Sans", sans-serif; }
-      .card { background: rgba(17, 24, 39, 0.8); border: 1px solid rgba(255, 255, 255, 0.08); border-radius: 12px; }
-      .badge { font-size: 0.65rem; font-weight: 700; text-transform: uppercase; padding: 0.125rem 0.5rem; border-radius: 9999px; border-width: 1px; }
-      .badge-completed { background: rgba(16, 185, 129, 0.1); color: #34d399; border-color: rgba(16, 185, 129, 0.2); }
-      .badge-failed { background: rgba(239, 68, 68, 0.1); color: #f87171; border-color: rgba(239, 68, 68, 0.2); }
-      .badge-running { background: rgba(245, 158, 11, 0.1); color: #fbbf24; border-color: rgba(245, 158, 11, 0.2); }
-      .badge-queued { background: rgba(107, 114, 128, 0.1); color: #9ca3af; border-color: rgba(107, 114, 128, 0.2); }
-      input { background: #111827 !important; border: 1px solid #374151 !important; color: #f3f4f6 !important; }
-      th.sortable { cursor: pointer; user-select: none; }
-      th.sortable:hover { color: #6366f1; }
-      th.sortable::after { content: " ↕"; font-size: 0.8em; opacity: 0.3; }
+      body { background: #0f172a; color: #f1f5f9; font-family: 'Inter', system-ui, sans-serif; }
+      .sidebar { background: #1e293b; border-right: 1px solid #334155; }
+      .card { background: #1e293b; border: 1px solid #334155; border-radius: 1rem; }
+      .badge { @apply px-3 py-1 rounded-full text-[10px] font-bold uppercase tracking-wider; }
+      .badge-queued { background: rgba(148, 163, 184, 0.1); color: #94a3b8; border: 1px solid rgba(148, 163, 184, 0.2); }
+      .badge-running { background: rgba(99, 102, 241, 0.1); color: #6366f1; border: 1px solid rgba(99, 102, 241, 0.2); animation: pulse 2s infinite; }
+      .badge-completed { background: rgba(16, 185, 129, 0.1); color: #10b981; border: 1px solid rgba(16, 185, 129, 0.2); }
+      .badge-failed { background: rgba(239, 68, 68, 0.1); color: #ef4444; border: 1px solid rgba(239, 68, 68, 0.2); }
+      @keyframes pulse { 0%, 100% { opacity: 1; } 50% { opacity: 0.5; } }
+      .log-terminal { background: #020617; font-family: 'Fira Code', monospace; font-size: 11px; }
     </style>
   </head>
-  <body class="min-h-screen">
-    <div class="max-w-7xl mx-auto p-6 space-y-6">
-      <!-- Header -->
-      <div class="flex items-center justify-between">
-        <div class="flex items-center gap-4">
-          <a href="/" class="p-2 bg-slate-800 hover:bg-slate-700 rounded-full transition text-slate-400 hover:text-white">
-            <svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5" viewBox="0 0 20 20" fill="currentColor">
-              <path fill-rule="evenodd" d="M9.707 16.707a1 1 0 01-1.414 0l-6-6a1 1 0 010-1.414l6-6a1 1 0 011.414 1.414L5.414 9H17a1 1 0 110 2H5.414l4.293 4.293a1 1 0 010 1.414z" clip-rule="evenodd" />
-            </svg>
-          </a>
-          <div>
-            <div class="flex items-center gap-3">
-              <h1 class="text-2xl font-bold text-white tracking-tight">Run Details</h1>
-              <div id="statusBadge" class="badge badge-queued">Loading</div>
-            </div>
-            <p class="text-sm text-slate-400 mt-1 font-mono">ID: {{ run_id }}</p>
+  <body class="flex h-screen overflow-hidden">
+    <!-- Sidebar -->
+    <aside class="sidebar w-64 flex-shrink-0 flex flex-col">
+      <div class="p-6 border-b border-slate-700/50">
+        <a href="/" class="flex items-center gap-3 hover:opacity-80 transition">
+          <div class="w-8 h-8 bg-indigo-600 rounded-lg flex items-center justify-center"><i class="fas fa-arrow-left text-white text-xs"></i></div>
+          <span class="font-bold text-white tracking-tight">Back to Home</span>
+        </a>
+      </div>
+      <div class="p-6 space-y-6">
+        <div>
+          <p class="text-[10px] font-bold text-slate-500 uppercase tracking-widest mb-3">Current Run</p>
+          <div id="statusBadge" class="badge badge-queued">Queued</div>
+          <div class="mt-4 space-y-3">
+             <div><p class="text-[10px] text-slate-500 font-bold uppercase">Template</p><p id="statTemplate" class="text-sm font-medium text-slate-200">-</p></div>
+             <div><p class="text-[10px] text-slate-500 font-bold uppercase">Findings</p><p id="statFindings" class="text-sm font-medium text-slate-200">0</p></div>
           </div>
         </div>
-        <div class="flex items-center gap-2">
-            <button onclick="viewLogs()" class="bg-slate-800 hover:bg-slate-700 text-slate-300 px-4 py-2 rounded-lg text-sm font-semibold transition border border-slate-700">View Logs</button>
-            <button onclick="exportData('csv')" class="bg-slate-800 hover:bg-slate-700 text-slate-300 px-4 py-2 rounded-lg text-sm font-semibold transition border border-slate-700">Export CSV</button>
-            <button onclick="exportData('json')" class="bg-slate-800 hover:bg-slate-700 text-slate-300 px-4 py-2 rounded-lg text-sm font-semibold transition border border-slate-700">Export JSON</button>
+        <div class="pt-6 border-t border-slate-700/50">
+           <button onclick="toggleLogs()" class="w-full py-3 bg-slate-800 rounded-xl text-xs font-bold text-slate-300 hover:bg-slate-700 transition flex items-center justify-center gap-2">
+             <i class="fas fa-terminal"></i> Toggle Run Logs
+           </button>
         </div>
       </div>
+    </aside>
 
-      <!-- Main Analytics Section -->
-      <div class="grid grid-cols-1 lg:grid-cols-4 gap-6">
-          <div class="space-y-4">
-              <div class="card p-4">
-                  <p class="text-xs font-bold text-slate-500 uppercase">Findings</p>
-                  <p id="statFindings" class="text-3xl font-bold text-white mt-1">0</p>
-              </div>
-              <div class="card p-4">
-                  <p class="text-xs font-bold text-slate-500 uppercase tracking-wider">Avg Quality</p>
-                  <p id="statAvgQuality" class="text-2xl font-bold text-indigo-400 mt-1">0</p>
-              </div>
-              <div class="card p-4">
-                  <p class="text-xs font-bold text-slate-500 uppercase">Template</p>
-                  <p id="statTemplate" class="text-xs font-mono text-slate-300 mt-2 truncate">...</p>
-              </div>
+    <main class="flex-1 overflow-y-auto bg-slate-950 flex flex-col">
+       <div id="logTerminal" class="hidden h-64 flex-shrink-0 log-terminal p-4 overflow-y-auto border-b border-indigo-500/20 text-indigo-300/80">
+          <div class="flex items-center justify-between mb-2">
+            <span class="text-[10px] font-bold uppercase tracking-widest text-indigo-500">Execution Logs</span>
+            <button onclick="toggleLogs()" class="text-slate-500 hover:text-white"><i class="fas fa-times"></i></button>
           </div>
-          <div class="lg:col-span-3 grid grid-cols-1 md:grid-cols-2 gap-6">
-              <div class="card p-6">
-                  <h3 class="text-sm font-bold text-slate-400 uppercase mb-4">Business Types</h3>
-                  <div class="h-48"><canvas id="typeChart"></canvas></div>
-              </div>
-              <div class="card p-6">
-                  <h3 class="text-sm font-bold text-slate-400 uppercase mb-4">Data Completeness</h3>
-                  <div class="h-48"><canvas id="qualityChart"></canvas></div>
-              </div>
-          </div>
-      </div>
+          <pre id="logContent" class="whitespace-pre-wrap"></pre>
+       </div>
 
-      <div class="grid grid-cols-1 lg:grid-cols-2 gap-6">
-        <div class="card p-6 relative">
-          <div class="flex items-center justify-between mb-4">
-              <h2 class="text-lg font-semibold text-white">Geographic Map</h2>
-              <div class="flex items-center gap-2">
-                  <label class="text-xs text-slate-500">Heatmap</label>
-                  <input type="checkbox" id="heatmapToggle" onchange="toggleHeatmap()" class="h-3 w-3">
-              </div>
+       <div class="p-8 space-y-8">
+          <div class="grid grid-cols-1 lg:grid-cols-3 gap-6">
+             <div class="lg:col-span-2 card p-6 h-[500px]">
+                <div class="flex items-center justify-between mb-4">
+                   <h2 class="font-bold text-white">Geographic Map</h2>
+                   <div class="flex items-center gap-2 px-3 py-1 bg-slate-900 rounded-full border border-slate-800">
+                      <span class="text-[10px] font-bold text-slate-500 uppercase">Interactive Marker View</span>
+                   </div>
+                </div>
+                <div id="map" class="h-[400px] rounded-xl border border-slate-800 overflow-hidden"></div>
+             </div>
+             <div class="space-y-6">
+                <div class="card p-6">
+                   <h3 class="text-xs font-bold text-slate-500 uppercase mb-4">Category Distribution</h3>
+                   <div class="h-48"><canvas id="typeChart"></canvas></div>
+                </div>
+                <div class="card p-6">
+                   <h3 class="text-xs font-bold text-slate-500 uppercase mb-2">Export Data</h3>
+                   <div class="grid grid-cols-2 gap-3 mt-4">
+                      <button onclick="exportData('csv')" class="py-3 bg-slate-800 rounded-xl text-xs font-bold text-white hover:bg-slate-700 transition"><i class="fas fa-file-csv mr-2"></i> CSV</button>
+                      <button onclick="exportData('json')" class="py-3 bg-slate-800 rounded-xl text-xs font-bold text-white hover:bg-slate-700 transition"><i class="fas fa-file-code mr-2"></i> JSON</button>
+                   </div>
+                </div>
+             </div>
           </div>
-          <div id="map" class="h-[400px] rounded-lg border border-slate-800 overflow-hidden"></div>
-        </div>
-        <div class="card p-6">
-          <h2 class="text-lg font-semibold text-white mb-4">Distance Distribution</h2>
-          <div class="h-[400px]"><canvas id="histChart"></canvas></div>
-        </div>
-      </div>
 
-      <section class="space-y-4">
-          <div class="flex items-center gap-4">
-              <input id="searchInput" type="text" placeholder="Search businesses..." class="flex-1 px-4 py-3 rounded-xl border border-slate-800 bg-slate-900 focus:border-indigo-500 transition">
+          <div class="card p-8">
+             <div class="flex items-center justify-between mb-8">
+                <h2 class="text-xl font-bold text-white flex items-center gap-3">
+                  <i class="fas fa-list text-indigo-500"></i> Discovered Findings
+                </h2>
+                <div class="flex items-center gap-4">
+                   <div class="relative">
+                      <i class="fas fa-search absolute left-3 top-1/2 -translate-y-1/2 text-slate-500 text-xs"></i>
+                      <input id="searchInput" type="text" placeholder="Filter results..." class="pl-9 pr-4 py-2 bg-slate-900 border border-slate-800 rounded-lg text-xs w-48 focus:w-64 transition-all">
+                   </div>
+                </div>
+             </div>
+             <div class="overflow-x-auto">
+                <table class="w-full text-sm">
+                  <thead>
+                    <tr class="text-left text-slate-500 border-b border-slate-800">
+                      <th class="pb-4 font-bold uppercase text-[10px] tracking-wider">Distance</th>
+                      <th class="pb-4 font-bold uppercase text-[10px] tracking-wider">Business Name</th>
+                      <th class="pb-4 font-bold uppercase text-[10px] tracking-wider">Type</th>
+                      <th class="pb-4 font-bold uppercase text-[10px] tracking-wider">Scraped Summary</th>
+                      <th class="pb-4 text-right">Links</th>
+                    </tr>
+                  </thead>
+                  <tbody id="findingsTbody" class="divide-y divide-slate-800/50"></tbody>
+                </table>
+             </div>
           </div>
-          <div class="card p-6">
-            <div class="flex items-center justify-between mb-6">
-              <h2 class="text-xl font-semibold text-white">Findings Table</h2>
-              <div class="text-sm text-slate-500">Showing <span id="findingsCountLabel">0</span> entries</div>
-            </div>
-            <div class="overflow-x-auto">
-              <table class="w-full text-sm">
-                <thead>
-                  <tr class="text-left text-slate-500 border-b border-slate-800">
-                    <th onclick="sortTable('distance_miles')" class="pb-3 px-2 sortable">Dist</th>
-                    <th onclick="sortTable('name')" class="pb-3 sortable">Name</th>
-                    <th onclick="sortTable('business_type')" class="pb-3 sortable">Type</th>
-                    <th class="pb-3">Enrichment</th>
-                    <th class="pb-3 text-right">Actions</th>
-                  </tr>
-                </thead>
-                <tbody id="findingsTbody" class="divide-y divide-slate-800"></tbody>
-              </table>
-            </div>
-          </div>
-      </section>
-    </div>
+       </div>
+    </main>
 
     <script>
       const runId = "{{ run_id }}";
-      let allFindings = [];
-      let currentFiltered = [];
-      let map = null, markerCluster = null, heatLayer = null;
-      let sortConfig = { key: 'distance_miles', direction: 'asc' };
+      let allFindings = [], map = null, markers = null;
 
-      function updateStatusBadge(status) {
-        const badge = document.getElementById('statusBadge');
-        badge.textContent = status; badge.className = 'badge badge-' + status;
+      function toggleLogs() { document.getElementById('logTerminal').classList.toggle('hidden'); if(!document.getElementById('logTerminal').classList.contains('hidden')) fetchLogs(); }
+      async function fetchLogs() { const res = await fetch(`/api/runs/${runId}/logs`); if(res.ok) document.getElementById('logContent').textContent = await res.text(); }
+
+      function renderTable(findings) {
+        const tbody = document.getElementById("findingsTbody"); tbody.innerHTML = "";
+        findings.forEach(f => {
+          const summary = f.ai_summary ? `<div class="text-[11px] text-indigo-400 font-medium bg-indigo-500/5 p-2 rounded-lg border border-indigo-500/10">${f.ai_summary}</div>` : '<span class="text-slate-600 italic text-xs">No enrichment data</span>';
+          const website = f.website && f.website !== "N/A" ? `<a class="w-8 h-8 flex items-center justify-center bg-indigo-500/10 text-indigo-400 rounded-full hover:bg-indigo-500 hover:text-white transition" target="_blank" href="${f.website}"><i class="fas fa-external-link-alt text-[10px]"></i></a>` : '';
+          const tr = document.createElement("tr");
+          tr.innerHTML = `
+            <td class="py-5 font-mono text-xs text-indigo-300 font-bold">${f.distance_miles.toFixed(2)} mi</td>
+            <td class="py-5"><div class="font-bold text-white">${f.name}</div><div class="text-[10px] text-slate-500">${f.location}</div></td>
+            <td class="py-5"><span class="px-2 py-1 bg-slate-900 rounded text-[10px] text-slate-400 font-bold uppercase">${f.business_type}</span></td>
+            <td class="py-5 max-w-xs">${summary}</td>
+            <td class="py-5 text-right flex justify-end">${website}</td>
+          `;
+          tbody.appendChild(tr);
+        });
       }
 
-      async function viewLogs() {
-          const res = await fetch(`/api/runs/${runId}/logs`);
-          if (res.ok) alert(await res.text());
-      }
-
-      function sortTable(key) {
-          if (sortConfig.key === key) sortConfig.direction = sortConfig.direction === 'asc' ? 'desc' : 'asc';
-          else { sortConfig.key = key; sortConfig.direction = 'asc'; }
-          const sorted = [...currentFiltered].sort((a, b) => {
-              if (a[key] < b[key]) return sortConfig.direction === 'asc' ? -1 : 1;
-              if (a[key] > b[key]) return sortConfig.direction === 'asc' ? 1 : -1;
-              return 0;
-          });
-          renderTable(sorted, false);
-      }
-
-      function toggleHeatmap() {
-          const showHeat = document.getElementById('heatmapToggle').checked;
-          if (showHeat) { map.removeLayer(markerCluster); map.addLayer(heatLayer); }
-          else { map.removeLayer(heatLayer); map.addLayer(markerCluster); }
-      }
-
-      function renderAnalytics(findings) {
-          const typeCtx = document.getElementById('typeChart').getContext('2d');
-          const qualCtx = document.getElementById('qualityChart').getContext('2d');
-          const typeCounts = {};
-          findings.forEach(f => typeCounts[f.business_type] = (typeCounts[f.business_type] || 0) + 1);
-          new Chart(typeCtx, {
-              type: 'doughnut',
-              data: {
-                  labels: Object.keys(typeCounts),
-                  datasets: [{ data: Object.values(typeCounts), backgroundColor: ['#6366f1', '#10b981', '#f59e0b', '#ef4444', '#8b5cf6'], borderWidth: 0 }]
-              },
-              options: { plugins: { legend: { display: false } }, cutout: '70%' }
-          });
-          const scores = findings.map(f => f.quality_score);
-          const avg = scores.length ? (scores.reduce((a,b)=>a+b,0)/scores.length).toFixed(1) : 0;
-          document.getElementById('statAvgQuality').textContent = avg + '%';
-          new Chart(qualCtx, {
-              type: 'bar',
-              data: { labels: ['Completeness'], datasets: [{ data: [avg], backgroundColor: '#6366f1' }] },
-              options: { scales: { y: { min: 0, max: 100, display: false } }, plugins: { legend: { display: false } } }
-          });
-      }
-
-      function renderHistogram(findings) {
-        const ctx = document.getElementById("histChart").getContext("2d");
-        const dists = findings.map(f => f.distance_miles).filter(d => !isNaN(d));
-        if (!dists.length) return;
-        const bins = 15, max = Math.max(...dists) || 1, step = max/bins, counts = new Array(bins).fill(0);
-        dists.forEach(d => counts[Math.min(bins-1, Math.floor(d/step))]++);
+      function renderCharts(findings) {
+        const ctx = document.getElementById('typeChart').getContext('2d');
+        const counts = {}; findings.forEach(f => counts[f.business_type] = (counts[f.business_type]||0)+1);
         new Chart(ctx, {
-          type: 'bar',
-          data: { labels: counts.map((_,i)=>(i*step).toFixed(1)), datasets: [{ label: 'Count', data: counts, backgroundColor: 'rgba(99, 102, 241, 0.6)' }] },
-          options: { responsive: true, maintainAspectRatio: false, scales: { x: { ticks: { color: '#64748b' } }, y: { display: false } } }
+          type: 'doughnut',
+          data: { labels: Object.keys(counts), datasets: [{ data: Object.values(counts), backgroundColor: ['#6366f1', '#10b981', '#f59e0b', '#ec4899', '#8b5cf6'], borderWidth: 0 }] },
+          options: { plugins: { legend: { display: false } }, cutout: '75%', responsive: true, maintainAspectRatio: false }
         });
       }
 
       function renderMap(findings) {
-        if (!map) {
-            map = L.map("map");
-            L.tileLayer("https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png", { maxZoom: 19 }).addTo(map);
-            markerCluster = L.markerClusterGroup(); heatLayer = L.heatLayer([], {radius: 25});
-            map.addLayer(markerCluster);
-        }
-        markerCluster.clearLayers(); const heatPoints = [], bounds = [];
+        if (!map) { map = L.map("map").setView([0,0], 2); L.tileLayer("https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png").addTo(map); markers = L.layerGroup().addTo(map); }
+        markers.clearLayers(); const bounds = [];
         findings.forEach(f => {
           if (f.latitude && f.longitude) {
-            const m = L.marker([f.latitude, f.longitude]).bindPopup(`<b>${f.name}</b>`);
-            markerCluster.addLayer(m); heatPoints.push([f.latitude, f.longitude, 1]); bounds.push([f.latitude, f.longitude]);
+            const m = L.marker([f.latitude, f.longitude]).bindPopup(`<b>${f.name}</b><br>${f.business_type}`);
+            markers.addLayer(m); bounds.push([f.latitude, f.longitude]);
           }
         });
-        heatLayer.setLatLngs(heatPoints);
         if (bounds.length) map.fitBounds(bounds);
       }
 
-      function renderTable(findings, updateFiltered = true) {
-        if (updateFiltered) currentFiltered = findings;
-        const tbody = document.getElementById("findingsTbody");
-        tbody.innerHTML = "";
-        findings.forEach(f => {
-          const enrichment = f.ai_summary ? `<div class="text-[10px] text-emerald-400 italic mt-1">${f.ai_summary}</div>` : '';
-          const website = f.website && f.website !== "N/A" ? `<a class="text-indigo-400" target="_blank" href="${f.website}">Visit</a>` : '-';
-          const tr = document.createElement("tr");
-          tr.innerHTML = `
-            <td class="py-4 px-2 font-mono text-indigo-300">${f.distance_miles.toFixed(2)}</td>
-            <td class="py-4 font-medium text-white">${f.name}</td>
-            <td class="py-4 text-slate-400 text-xs">${f.business_type}</td>
-            <td class="py-4">${enrichment}</td>
-            <td class="py-4 text-right">${website}</td>
-          `;
-          tbody.appendChild(tr);
-        });
-        document.getElementById('findingsCountLabel').textContent = findings.length;
-      }
-
-      function exportData(format) {
-          if (!allFindings.length) return alert('No findings');
-          if (format === 'json') {
-              const dataStr = "data:text/json;charset=utf-8," + encodeURIComponent(JSON.stringify(allFindings, null, 2));
-              const a = document.createElement('a'); a.setAttribute("href", dataStr); a.setAttribute("download", "findings.json"); a.click();
-          } else if (format === 'csv') {
-              const headers = Object.keys(allFindings[0]).join(",");
-              const rows = allFindings.map(f => Object.values(f).map(v => `"${String(v).replace(/"/g, '""')}"`).join(",")).join("\n");
-              const csvContent = "data:text/csv;charset=utf-8," + encodeURIComponent(headers + "\n" + rows);
-              const a = document.createElement('a'); a.setAttribute("href", csvContent); a.setAttribute("download", "findings.csv"); a.click();
-          }
+      async function loadRun() {
+        const [dRes, fRes] = await Promise.all([fetch(`/api/runs/${runId}`), fetch(`/api/runs/${runId}/findings`)]);
+        const details = await dRes.json(); allFindings = await fRes.json();
+        const badge = document.getElementById('statusBadge'); badge.textContent = details.status; badge.className = 'badge badge-' + details.status;
+        document.getElementById('statFindings').textContent = allFindings.length;
+        document.getElementById('statTemplate').textContent = details.template_key;
+        renderCharts(allFindings); renderMap(allFindings); renderTable(allFindings);
+        if(details.status === 'running') setTimeout(loadRun, 5000);
       }
 
       document.getElementById('searchInput').addEventListener('input', (e) => {
           const q = e.target.value.toLowerCase();
           const filtered = allFindings.filter(f => f.name.toLowerCase().includes(q) || f.business_type.toLowerCase().includes(q));
-          renderTable(filtered); renderMap(filtered);
+          renderTable(filtered);
       });
 
-      async function loadRun() {
-        const [dRes, fRes] = await Promise.all([fetch(`/api/runs/${runId}`), fetch(`/api/runs/${runId}/findings`)]);
-        const details = await dRes.json(); allFindings = await fRes.json();
-        updateStatusBadge(details.status);
-        document.getElementById('statFindings').textContent = allFindings.length;
-        document.getElementById('statTemplate').textContent = details.template_key;
-        renderAnalytics(allFindings); renderHistogram(allFindings); renderMap(allFindings); renderTable(allFindings);
+      function exportData(format) {
+          const dataStr = format === 'json' ? JSON.stringify(allFindings, null, 2) : allFindings.map(f => Object.values(f).join(",")).join("\n");
+          const blob = new Blob([dataStr], { type: format === 'json' ? 'application/json' : 'text/csv' });
+          const url = URL.createObjectURL(blob); const a = document.createElement('a'); a.href = url; a.download = `findings.${format}`; a.click();
       }
-      loadRun().catch(console.error);
+
+      loadRun();
     </script>
   </body>
 </html>
