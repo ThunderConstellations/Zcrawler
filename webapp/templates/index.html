@@ -231,11 +231,26 @@
             <div><label class="block text-xs font-bold text-slate-500 uppercase mb-2">Template</label>
               <select id="defTemplate" onchange="updateTemplateForm()" class="w-full rounded-xl px-4 py-3">
                 <option value="osm_business_crawler">OpenStreetMap Crawler</option>
-                <option value="directory_scraper">Directory Scraper</option>
+                <option value="directory_scraper">Directory Scraper (Playwright + AI)</option>
               </select>
             </div>
           </div>
-          <div><label class="block text-xs font-bold text-slate-500 uppercase mb-2">Description</label><textarea id="defDesc" rows="2" class="w-full rounded-xl px-4 py-3"></textarea></div>
+          <div class="grid grid-cols-2 gap-6">
+            <div><label class="block text-xs font-bold text-slate-500 uppercase mb-2">Recipe Type</label>
+              <select id="defRecipe" class="w-full rounded-xl px-4 py-3">
+                <option value="local_business">Local Business Discovery</option>
+                <option value="job_board">Job Board Scraper</option>
+                <option value="custom_llm">Custom LLM Scraper</option>
+              </select>
+            </div>
+            <div><label class="block text-xs font-bold text-slate-500 uppercase mb-2">Description</label><input id="defDesc" type="text" class="w-full rounded-xl px-4 py-3"></div>
+          </div>
+
+          <div id="mapPickerContainer" class="space-y-2">
+            <label class="block text-xs font-bold text-slate-500 uppercase">Set Search Anchor (Click on Map)</label>
+            <div id="pickerMap" class="h-48 rounded-xl border border-slate-800"></div>
+            <input id="pickerCoords" type="hidden">
+          </div>
 
           <div id="osmConfig" class="space-y-4 p-6 bg-slate-900 rounded-2xl border border-slate-800">
             <h4 class="text-sm font-bold text-indigo-400 uppercase tracking-widest">OSM Configuration</h4>
@@ -254,9 +269,15 @@
             <div><label class="block text-[10px] text-slate-500 font-bold uppercase mb-1">Target URL</label><input id="confUrl" type="url" class="w-full rounded-lg px-3 py-2"></div>
           </div>
 
+          <div>
+            <label class="block text-xs font-bold text-slate-500 uppercase mb-2">AI Extraction Prompt (Optional)</label>
+            <textarea id="defAiPrompt" rows="2" placeholder="Describe what to extract in plain English..." class="w-full rounded-xl px-4 py-3"></textarea>
+          </div>
+
           <div class="flex items-center gap-4 pt-4">
             <button id="saveBtn" onclick="saveDefinition()" class="flex-1 py-4 btn-primary rounded-xl font-bold text-white">Save Definition</button>
-            <button onclick="toggleAdvanced()" class="px-6 py-4 bg-slate-800 rounded-xl text-slate-400 font-bold border border-slate-700">JSON Mode</button>
+            <button onclick="previewCrawler()" class="px-6 py-4 bg-indigo-500/10 text-indigo-400 rounded-xl font-bold border border-indigo-500/20">Preview</button>
+            <button onclick="toggleAdvanced()" class="px-6 py-4 bg-slate-800 rounded-xl text-slate-400 font-bold border border-slate-700">JSON</button>
           </div>
           <div id="advancedConfig" class="hidden mt-4"><label class="block text-xs font-bold text-slate-500 uppercase mb-2">Raw JSON Configuration</label><textarea id="defConfig" rows="8" class="w-full rounded-xl px-4 py-3 font-mono text-xs"></textarea></div>
         </div>
@@ -283,8 +304,24 @@
        </div>
     </div>
 
+    <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" />
+    <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
     <script>
       let definitions = [], runs = [], schedules = [];
+      let pickerMap = null, pickerMarker = null;
+
+      function initPickerMap() {
+        if (pickerMap) return;
+        pickerMap = L.map('pickerMap').setView([41.4631, -87.0611], 13);
+        L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{y}/{x}.png').addTo(pickerMap);
+        pickerMap.on('click', function(e) {
+          if (pickerMarker) pickerMap.removeLayer(pickerMarker);
+          pickerMarker = L.marker(e.latlng).addTo(pickerMap);
+          document.getElementById('pickerCoords').value = `${e.latlng.lat},${e.latlng.lng}`;
+          // Auto-fill address if possible or just use coords
+        });
+      }
+
       function showSection(id) {
         document.querySelectorAll('[id^="section-"]').forEach(s => s.classList.add('hidden'));
         document.getElementById('section-' + id).classList.remove('hidden');
@@ -295,7 +332,15 @@
         document.getElementById('sectionTitle').textContent = id.charAt(0).toUpperCase() + id.slice(1) + (id === 'dashboard' ? ' Overview' : '');
       }
 
-      function toggleDefForm() { const c = document.getElementById('defFormContainer'); c.classList.toggle('hidden'); if (c.classList.contains('hidden')) clearForm(); }
+      function toggleDefForm() {
+        const c = document.getElementById('defFormContainer');
+        c.classList.toggle('hidden');
+        if (!c.classList.contains('hidden')) {
+          setTimeout(initPickerMap, 100);
+        } else {
+          clearForm();
+        }
+      }
       function clearForm() { ['defId','defName','defDesc','confCategories','confCity','confRadius','confLimit','confUrl','defConfig'].forEach(id => document.getElementById(id).value = ''); document.getElementById('formTitle').textContent = 'New Crawler Definition'; document.getElementById('saveBtn').textContent = 'Save Definition'; }
       function updateTemplateForm() { const t = document.getElementById('defTemplate').value; document.getElementById('osmConfig').classList.toggle('hidden', t !== 'osm_business_crawler'); document.getElementById('dirConfig').classList.toggle('hidden', t !== 'directory_scraper'); }
       function toggleAdvanced() { document.getElementById('advancedConfig').classList.toggle('hidden'); }
@@ -303,12 +348,44 @@
       async function saveDefinition() {
         const id = document.getElementById('defId').value, t = document.getElementById('defTemplate').value;
         let config = {};
-        if (!document.getElementById('advancedConfig').classList.contains('hidden')) { try { config = JSON.parse(document.getElementById('defConfig').value); } catch(e) { return alert('Invalid JSON'); } }
-        else if (t === 'osm_business_crawler') config = { categories: document.getElementById('confCategories').value, city_query: document.getElementById('confCity').value, radius_mi: parseFloat(document.getElementById('confRadius').value), limit: parseInt(document.getElementById('confLimit').value) };
+        if (!document.getElementById('advancedConfig').classList.contains('hidden')) {
+          try { config = JSON.parse(document.getElementById('defConfig').value); } catch(e) { return alert('Invalid JSON'); }
+        }
+        else if (t === 'osm_business_crawler') {
+          config = {
+            categories: document.getElementById('confCategories').value,
+            city_query: document.getElementById('confCity').value,
+            radius_mi: parseFloat(document.getElementById('confRadius').value),
+            limit: parseInt(document.getElementById('confLimit').value),
+            anchor: document.getElementById('pickerCoords').value
+          };
+        }
         else config = { url: document.getElementById('confUrl').value };
-        const body = { name: document.getElementById('defName').value, description: document.getElementById('defDesc').value, template_key: t, config_json: JSON.stringify(config) };
+
+        const body = {
+          name: document.getElementById('defName').value,
+          description: document.getElementById('defDesc').value,
+          template_key: t,
+          recipe_type: document.getElementById('defRecipe').value,
+          ai_prompt: document.getElementById('defAiPrompt').value,
+          config_json: JSON.stringify(config)
+        };
         const res = await fetch(id ? `/api/definitions/${id}` : '/api/definitions', { method: id ? 'PUT' : 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(body) });
         if (res.ok) { toggleDefForm(); fetchData(); }
+      }
+
+      async function previewCrawler() {
+        const t = document.getElementById('defTemplate').value;
+        const body = {
+          template_key: t,
+          config_json: JSON.stringify({ url: document.getElementById('confUrl').value, categories: document.getElementById('confCategories').value }),
+          ai_prompt: document.getElementById('defAiPrompt').value
+        };
+        alert('Previewing crawler... (Check console for output)');
+        const res = await fetch('/api/preview', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(body) });
+        const data = await res.json();
+        console.log('Preview data:', data);
+        alert('Preview found ' + (data.findings?.length || 0) + ' items.');
       }
 
       async function deleteDef(id) { if (confirm('Delete definition?')) { const res = await fetch(`/api/definitions/${id}`, { method: 'DELETE' }); if (res.ok) fetchData(); } }

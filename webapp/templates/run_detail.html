@@ -126,9 +126,20 @@
           const summary = f.ai_summary ? `<div class="text-[11px] text-indigo-400 font-medium bg-indigo-500/5 p-2 rounded-lg border border-indigo-500/10">${f.ai_summary}</div>` : '<span class="text-slate-600 italic text-xs">No enrichment data</span>';
           const website = f.website && f.website !== "N/A" ? `<a class="w-8 h-8 flex items-center justify-center bg-indigo-500/10 text-indigo-400 rounded-full hover:bg-indigo-500 hover:text-white transition" target="_blank" href="${f.website}"><i class="fas fa-external-link-alt text-[10px]"></i></a>` : '';
           const tr = document.createElement("tr");
+          const socials = f.social_links ? JSON.parse(f.social_links) : {};
+          const socialHtml = Object.entries(socials).map(([p, link]) => `
+            <a href="${link}" target="_blank" class="text-slate-500 hover:text-indigo-400 ml-2" title="${p}">
+              <i class="fab fa-${p}"></i>
+            </a>
+          `).join('');
+
           tr.innerHTML = `
             <td class="py-5 font-mono text-xs text-indigo-300 font-bold">${f.distance_miles.toFixed(2)} mi</td>
-            <td class="py-5"><div class="font-bold text-white">${f.name}</div><div class="text-[10px] text-slate-500">${f.location}</div></td>
+            <td class="py-5">
+              <div class="font-bold text-white">${f.name}</div>
+              <div class="text-[10px] text-slate-500">${f.location}</div>
+              <div class="flex items-center mt-1">${socialHtml}</div>
+            </td>
             <td class="py-5"><span class="px-2 py-1 bg-slate-900 rounded text-[10px] text-slate-400 font-bold uppercase">${f.business_type}</span></td>
             <td class="py-5 max-w-xs">${summary}</td>
             <td class="py-5 text-right flex justify-end">${website}</td>

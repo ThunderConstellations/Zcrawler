@@ -42,10 +42,13 @@ def _script_command_for_osm(request: CreateRunRequest, run_dir: Path, config: Di
     return cmd
 
 
-def _script_command_for_directory(run_dir: Path, config: Dict[str, Any]) -> List[str]:
+def _script_command_for_directory(run_dir: Path, config: Dict[str, Any], ai_prompt: str = None) -> List[str]:
     script_path = REPO_ROOT / "scripts" / "directory_scraper.py"
     url = config.get("url", "http://example.com")
-    return [sys.executable, str(script_path), "--url", url, "--output-dir", str(run_dir)]
+    cmd = [sys.executable, str(script_path), "--url", url, "--output-dir", str(run_dir)]
+    if ai_prompt:
+        cmd.extend(["--ai-prompt", ai_prompt])
+    return cmd
 
 
 def _load_findings(output_dir: Path) -> List[Dict[str, Any]]:
@@ -76,7 +79,12 @@ def run_osm_business_crawler(run_id: str, request: CreateRunRequest, db: Session
     if run.template_key in ["osm_business_crawler"]:
         cmd = _script_command_for_osm(request, run_dir, config)
     elif run.template_key == "directory_scraper":
-        cmd = _script_command_for_directory(run_dir, config)
+        ai_prompt = None
+        if run.definition_id:
+            definition = db.get(CrawlerDefinition, run.definition_id)
+            if definition:
+                ai_prompt = definition.ai_prompt
+        cmd = _script_command_for_directory(run_dir, config, ai_prompt=ai_prompt)
     else:
         raise RuntimeError(f"Unsupported template_key: {run.template_key}")
 

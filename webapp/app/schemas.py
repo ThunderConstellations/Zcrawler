@@ -10,6 +10,8 @@ class CrawlerDefinitionBase(BaseModel):
     name: str
     description: Optional[str] = None
     template_key: str
+    recipe_type: Optional[str] = None
+    ai_prompt: Optional[str] = None
     config_json: str
 
 

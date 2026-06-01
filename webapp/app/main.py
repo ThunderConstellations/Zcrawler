@@ -166,6 +166,19 @@ def get_findings(run_id: str, db: Session = Depends(get_db)):
     if run is None: raise HTTPException(status_code=404, detail="Run not found")
     return db.query(CrawlFinding).filter(CrawlFinding.run_id == run_id).order_by(CrawlFinding.distance_miles.asc()).all()
 
+@app.post("/api/preview")
+async def preview_crawler(definition: CrawlerDefinitionCreate):
+    """Temporary preview of a crawler without creating a full run."""
+    # This is a simplified preview that just runs the first part of a crawl
+    # or returns mock data based on the template
+    if definition.template_key == "directory_scraper":
+        config = json.loads(definition.config_json)
+        url = config.get("url", "http://example.com")
+        # In a real app, we might call the scraper script with a --preview flag
+        return {"findings": [{"name": f"Preview Result from {url}", "business_type": "Preview", "distance_miles": 0.0}]}
+    else:
+        return {"findings": [{"name": "OSM Preview Item", "business_type": "OSM", "distance_miles": 1.0}]}
+
 # --- Schedules ---
 
 @app.get("/api/schedules", response_model=List[CrawlerScheduleResponse])
