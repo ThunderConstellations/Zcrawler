@@ -1,0 +1,90 @@
+2026-05-31T22:37:34+0000 INFO zcrawler_webapp Scheduler loop started.
+2026-06-01T17:00:33+0000 INFO zcrawler_webapp Scheduler loop started.
+2026-06-01T17:07:22+0000 INFO zcrawler_webapp Scheduler loop started.
+2026-06-01T17:07:26+0000 INFO zcrawler_webapp Scheduler loop started.
+2026-06-01T17:13:35+0000 INFO zcrawler_webapp Scheduler loop started.
+2026-06-01T17:14:03+0000 INFO zcrawler_webapp Scheduler loop started.
+2026-06-01T17:14:10+0000 INFO zcrawler_webapp Scheduler loop started.
+2026-06-01T17:14:16+0000 INFO zcrawler_webapp Scheduler loop started.
+2026-06-01T17:16:31+0000 WARNING zcrawler_webapp Output JSON not found at /tmp/tmpofhg36ka/businesses.json
+2026-06-01T17:17:36+0000 INFO zcrawler_webapp Scheduler loop started.
+2026-06-01T17:17:41+0000 WARNING zcrawler_webapp Output JSON not found at /tmp/tmpsqcz5ulj/businesses.json
+2026-06-01T17:19:14+0000 INFO zcrawler_webapp Scheduler loop started.
+2026-06-01T17:19:19+0000 WARNING zcrawler_webapp Output JSON not found at /tmp/tmpmpj701xt/businesses.json
+2026-06-01T17:20:33+0000 INFO zcrawler_webapp Scheduler loop started.
+2026-06-01T17:29:06+0000 INFO zcrawler_webapp Scheduler loop started.
+2026-06-01T17:29:38+0000 ERROR zcrawler_webapp Run failed: (sqlite3.OperationalError) table crawl_findings has no column named description
+[SQL: INSERT INTO crawl_findings (run_id, name, business_type, phone, website, email, opening_hours, location, latitude, longitude, distance_miles, quality_score, source, description, social_links, ai_summary, created_at) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?) RETURNING id]
+[parameters: ('11a7f5ab-ac35-4d36-9dfc-b140bc342adb', 'Old World Market', 'Supermarket', 'N/A', 'N/A', 'N/A', 'N/A', '76 South Washington Street, Valparaiso', 41.4669399, -87.0612052, 0.04481808546408174, 25, 'way:1155240179', None, None, None, '2026-06-01 17:29:38.634038')]
+(Background on this error at: https://sqlalche.me/e/20/e3q8)
+Traceback (most recent call last):
+  File "/home/jules/.pyenv/versions/3.12.13/lib/python3.12/site-packages/sqlalchemy/engine/base.py", line 2127, in _exec_insertmany_context
+    dialect.do_execute(
+  File "/home/jules/.pyenv/versions/3.12.13/lib/python3.12/site-packages/sqlalchemy/engine/default.py", line 952, in do_execute
+    cursor.execute(statement, parameters)
+sqlite3.OperationalError: table crawl_findings has no column named description
+
+The above exception was the direct cause of the following exception:
+
+Traceback (most recent call last):
+  File "/app/webapp/app/crawler_runner.py", line 126, in run_osm_business_crawler
+    db.commit()
+  File "/home/jules/.pyenv/versions/3.12.13/lib/python3.12/site-packages/sqlalchemy/orm/session.py", line 2034, in commit
+    trans.commit(_to_root=True)
+  File "<string>", line 2, in commit
+  File "/home/jules/.pyenv/versions/3.12.13/lib/python3.12/site-packages/sqlalchemy/orm/state_changes.py", line 137, in _go
+    ret_value = fn(self, *arg, **kw)
+                ^^^^^^^^^^^^^^^^^^^^
+  File "/home/jules/.pyenv/versions/3.12.13/lib/python3.12/site-packages/sqlalchemy/orm/session.py", line 1315, in commit
+    self._prepare_impl()
+  File "<string>", line 2, in _prepare_impl
+  File "/home/jules/.pyenv/versions/3.12.13/lib/python3.12/site-packages/sqlalchemy/orm/state_changes.py", line 137, in _go
+    ret_value = fn(self, *arg, **kw)
+                ^^^^^^^^^^^^^^^^^^^^
+  File "/home/jules/.pyenv/versions/3.12.13/lib/python3.12/site-packages/sqlalchemy/orm/session.py", line 1290, in _prepare_impl
+    self.session.flush()
+  File "/home/jules/.pyenv/versions/3.12.13/lib/python3.12/site-packages/sqlalchemy/orm/session.py", line 4352, in flush
+    self._flush(objects)
+  File "/home/jules/.pyenv/versions/3.12.13/lib/python3.12/site-packages/sqlalchemy/orm/session.py", line 4487, in _flush
+    with util.safe_reraise():
+         ^^^^^^^^^^^^^^^^^^^
+  File "/home/jules/.pyenv/versions/3.12.13/lib/python3.12/site-packages/sqlalchemy/util/langhelpers.py", line 122, in __exit__
+    raise exc_value.with_traceback(exc_tb)
+  File "/home/jules/.pyenv/versions/3.12.13/lib/python3.12/site-packages/sqlalchemy/orm/session.py", line 4448, in _flush
+    flush_context.execute()
+  File "/home/jules/.pyenv/versions/3.12.13/lib/python3.12/site-packages/sqlalchemy/orm/unitofwork.py", line 465, in execute
+    rec.execute(self)
+  File "/home/jules/.pyenv/versions/3.12.13/lib/python3.12/site-packages/sqlalchemy/orm/unitofwork.py", line 641, in execute
+    util.preloaded.orm_persistence.save_obj(
+  File "/home/jules/.pyenv/versions/3.12.13/lib/python3.12/site-packages/sqlalchemy/orm/persistence.py", line 94, in save_obj
+    _emit_insert_statements(
+  File "/home/jules/.pyenv/versions/3.12.13/lib/python3.12/site-packages/sqlalchemy/orm/persistence.py", line 1144, in _emit_insert_statements
+    result = connection.execute(
+             ^^^^^^^^^^^^^^^^^^^
+  File "/home/jules/.pyenv/versions/3.12.13/lib/python3.12/site-packages/sqlalchemy/engine/base.py", line 1421, in execute
+    return meth(
+           ^^^^^
+  File "/home/jules/.pyenv/versions/3.12.13/lib/python3.12/site-packages/sqlalchemy/sql/elements.py", line 526, in _execute_on_connection
+    return connection._execute_clauseelement(
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/home/jules/.pyenv/versions/3.12.13/lib/python3.12/site-packages/sqlalchemy/engine/base.py", line 1643, in _execute_clauseelement
+    ret = self._execute_context(
+          ^^^^^^^^^^^^^^^^^^^^^^
+  File "/home/jules/.pyenv/versions/3.12.13/lib/python3.12/site-packages/sqlalchemy/engine/base.py", line 1846, in _execute_context
+    return self._exec_insertmany_context(dialect, context)
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/home/jules/.pyenv/versions/3.12.13/lib/python3.12/site-packages/sqlalchemy/engine/base.py", line 2135, in _exec_insertmany_context
+    self._handle_dbapi_exception(
+  File "/home/jules/.pyenv/versions/3.12.13/lib/python3.12/site-packages/sqlalchemy/engine/base.py", line 2365, in _handle_dbapi_exception
+    raise sqlalchemy_exception.with_traceback(exc_info[2]) from e
+  File "/home/jules/.pyenv/versions/3.12.13/lib/python3.12/site-packages/sqlalchemy/engine/base.py", line 2127, in _exec_insertmany_context
+    dialect.do_execute(
+  File "/home/jules/.pyenv/versions/3.12.13/lib/python3.12/site-packages/sqlalchemy/engine/default.py", line 952, in do_execute
+    cursor.execute(statement, parameters)
+sqlalchemy.exc.OperationalError: (sqlite3.OperationalError) table crawl_findings has no column named description
+[SQL: INSERT INTO crawl_findings (run_id, name, business_type, phone, website, email, opening_hours, location, latitude, longitude, distance_miles, quality_score, source, description, social_links, ai_summary, created_at) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?) RETURNING id]
+[parameters: ('11a7f5ab-ac35-4d36-9dfc-b140bc342adb', 'Old World Market', 'Supermarket', 'N/A', 'N/A', 'N/A', 'N/A', '76 South Washington Street, Valparaiso', 41.4669399, -87.0612052, 0.04481808546408174, 25, 'way:1155240179', None, None, None, '2026-06-01 17:29:38.634038')]
+(Background on this error at: https://sqlalche.me/e/20/e3q8)
+2026-06-01T17:32:28+0000 INFO zcrawler_webapp Scheduler loop started.
+2026-06-01T17:32:49+0000 INFO zcrawler_webapp Sending completion webhook to http://localhost:9000/webhook
+2026-06-01T17:35:48+0000 INFO zcrawler_webapp Scheduler loop started.

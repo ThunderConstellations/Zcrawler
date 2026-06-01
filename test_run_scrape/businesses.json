@@ -1,0 +1,11 @@
+{
+  "businesses": [
+    {
+      "name": "Sample Business from Playwright",
+      "business_type": "Tech",
+      "distance_miles": 0.0,
+      "quality_score": 100,
+      "website": "https://news.ycombinator.com"
+    }
+  ]
+}

@@ -1,0 +1,13 @@
+INFO:     Started server process [993980]
+INFO:     Waiting for application startup.
+2026-06-01T17:35:48+0000 INFO zcrawler_webapp Scheduler loop started.
+INFO:     Application startup complete.
+INFO:     Uvicorn running on http://0.0.0.0:8000 (Press CTRL+C to quit)
+INFO:     127.0.0.1:32816 - "GET / HTTP/1.1" 200 OK
+INFO:     127.0.0.1:32816 - "GET /api/definitions HTTP/1.1" 200 OK
+INFO:     127.0.0.1:32834 - "GET /api/schedules HTTP/1.1" 200 OK
+INFO:     127.0.0.1:32826 - "GET /api/runs HTTP/1.1" 200 OK
+INFO:     127.0.0.1:33124 - "GET / HTTP/1.1" 200 OK
+INFO:     127.0.0.1:33124 - "GET /api/definitions HTTP/1.1" 200 OK
+INFO:     127.0.0.1:33136 - "GET /api/runs HTTP/1.1" 200 OK
+INFO:     127.0.0.1:33142 - "GET /api/schedules HTTP/1.1" 200 OK
