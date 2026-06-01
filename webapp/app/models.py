@@ -27,6 +27,7 @@ class CrawlerDefinition(Base):
     template_key: Mapped[str] = mapped_column(String(100), index=True)
     recipe_type: Mapped[str | None] = mapped_column(String(100), nullable=True)
     ai_prompt: Mapped[str | None] = mapped_column(Text, nullable=True)
+    webhook_url: Mapped[str | None] = mapped_column(Text, nullable=True)
     config_json: Mapped[str] = mapped_column(Text)
 
     created_at: Mapped[datetime] = mapped_column(
@@ -55,6 +56,7 @@ class CrawlRun(Base):
 
     reference_address: Mapped[str] = mapped_column(Text)
     city_query: Mapped[str] = mapped_column(Text)
+    webhook_url: Mapped[str | None] = mapped_column(Text, nullable=True)
     params_json: Mapped[str] = mapped_column(Text)
 
     output_dir: Mapped[str] = mapped_column(Text)

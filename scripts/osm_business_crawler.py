@@ -210,7 +210,7 @@ def write_outputs(businesses: List[Business]) -> None:
         for b in businesses: w.writerow([f"{b.distance_miles:.2f}", b.name, b.business_type, b.phone, b.website, b.location, b.quality_score])
 
 def main() -> None:
-    global REFERENCE_ADDRESS, CITY_QUERY, OUTPUT_DIR, OUTPUT_JSON, OUTPUT_CSV, SELECTED_CATEGORIES, RADIUS_MI, RESULT_LIMIT
+    global REFERENCE_ADDRESS, CITY_QUERY, OUTPUT_DIR, OUTPUT_JSON, OUTPUT_CSV, SELECTED_CATEGORIES, RADIUS_MI, RESULT_LIMIT, MAX_REVERSE_GEOCODE_LOOKUPS
 
     parser = argparse.ArgumentParser()
     parser.add_argument("--reference-address", default=REFERENCE_ADDRESS)
@@ -219,9 +219,14 @@ def main() -> None:
     parser.add_argument("--categories")
     parser.add_argument("--radius-mi", type=float)
     parser.add_argument("--limit", type=int)
+    parser.add_argument("--max-reverse-geocode-lookups", type=int, default=MAX_REVERSE_GEOCODE_LOOKUPS)
+    parser.add_argument("--no-reverse-geocode", action="store_true")
     args = parser.parse_args()
 
     REFERENCE_ADDRESS, CITY_QUERY, RADIUS_MI, RESULT_LIMIT = args.reference_address, args.city_query, args.radius_mi, args.limit
+    MAX_REVERSE_GEOCODE_LOOKUPS = args.max_reverse_geocode_lookups
+    if args.no_reverse_geocode:
+        MAX_REVERSE_GEOCODE_LOOKUPS = 0
     OUTPUT_DIR = Path(args.output_dir)
     OUTPUT_JSON, OUTPUT_CSV = OUTPUT_DIR / "businesses.json", OUTPUT_DIR / "businesses.csv"
     if args.categories: SELECTED_CATEGORIES = [c.strip() for c in args.categories.split(",") if c.strip()]

@@ -1,0 +1,26 @@
+{
+  "full_name": "John Doe",
+  "first_name": "John",
+  "last_name": "Doe",
+  "email": "john.doe@example.com",
+  "phone": "+1 (555) 012-3456",
+  "location": "Valparaiso, IN",
+  "address": "410 Glendale Blvd, Valparaiso, IN 46383",
+  "linkedin_url": "https://www.linkedin.com/in/johndoe",
+  "github_url": "https://github.com/johndoe",
+  "portfolio_url": "https://johndoe.dev",
+  "resume_path": "webapp/app/data/resume_sample.pdf",
+  "summary": "Full-stack software engineer with 5 years of experience in Python, React, and AI-driven applications. Passionate about automation and scalable architectures.",
+  "work_experience": [
+    {
+      "company": "Tech Solutions Inc.",
+      "role": "Senior Developer",
+      "years": "2020-Present",
+      "description": "Led development of high-performance web scrapers and data pipelines."
+    }
+  ],
+  "education": "B.S. in Computer Science, Purdue University",
+  "skills": ["Python", "JavaScript", "SQL", "Playwright", "Docker", "AWS"],
+  "visa_sponsorship_needed": "No",
+  "authorized_to_work_in_us": "Yes"
+}
