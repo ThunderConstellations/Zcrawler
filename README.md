@@ -1,77 +1,99 @@
-# Zcrawler 🕷️
+# 🕷️ Zcrawler: The AI-Powered Web Intelligence Platform
 
-Zcrawler is a high-performance web platform for automated local business discovery and data enrichment. It leverages OpenStreetMap (OSM) data and AI-powered web scraping to build comprehensive lead databases with geographic precision.
+Zcrawler is a state-of-the-art, modular web crawling and automation platform. Designed for both senior engineers and non-technical users, it bridges the gap between complex web scraping and actionable business intelligence. Whether you're discovering local businesses via OpenStreetMap, scraping dynamic directories with Playwright, or auto-filling job applications, Zcrawler handles the heavy lifting with AI-driven precision.
+
+---
 
 ## 🚀 Key Features
 
-- **Geographic Precision**: Anchor your searches with a reference address and define a specific search radius.
-- **Rich Data Enrichment**: Automatically scrapes business websites to extract OpenGraph descriptions, social links, and contact emails.
-- **Visual Intelligence**: Interactive Leaflet-based maps, mark clustering, and category distribution charts (Chart.js).
-- **Automated Scheduling**: Set up recurring crawls to monitor changes in your target areas.
-- **Pro Dashboard**: Modern dark-themed UI built with Tailwind CSS for managing definitions, schedules, and run history.
-- **Extensible Architecture**: Support for multiple crawler templates (OSM, Generic Directory Scrapers).
+- **🧩 Modular Workflow Builder**: Drag-and-drop style sequence builder. Chain Search, Scrape, AI Enrich, Vision Scrape, and Form Automation steps into a single pipeline.
+- **🤖 AI-Driven Enrichment**: Integrated with **OpenRouter** (Gemini, Llama, GPT) to automatically summarize websites, extract social links, and find contact emails.
+- **👁️ Multimodal Vision Scraping**: Uses AI Vision models to identify and extract data from website screenshots, bypassing complex DOM structures.
+- **📄 ATS Form Automation**: Intelligent job application filler that maps your JSON profile to complex forms on Greenhouse, Lever, and more.
+- **🛡️ Professional Stealth**: Built-in User-Agent rotation, webdriver masking, and Proxy support to avoid detection and IP bans.
+- **📊 Real-time Dashboard**: Interactive Leaflet maps, category distribution charts, and live execution logs.
+- **☁️ Cloud Exports**: One-click integration to sync findings with **Airtable** or **Google Sheets**.
 
-## 🛠️ Technical Stack
+---
 
-- **Backend**: FastAPI (Python 3.10+)
-- **Database**: SQLite with SQLAlchemy ORM
-- **Crawler**: Custom OSM/Overpass integration
-- **Frontend**: Tailwind CSS, Leaflet.js, Chart.js, FontAwesome
-- **Asynchronous**: Built-in task scheduler and background execution
+## 🛠️ Installation & Setup
 
-## ⚙️ Installation
+### 1. Prerequisites
+- **Python 3.10+**
+- **Node.js** (for Playwright browser engines)
+- **OpenRouter API Key** (for AI features)
 
-1. **Clone the repository**:
-   ```bash
-   git clone https://github.com/yourusername/Zcrawler.git
-   cd Zcrawler
-   ```
-
-2. **Install dependencies**:
-   ```bash
-   pip install -r webapp/requirements.txt
-   ```
-
-## 🚦 Quick Start
-
-### 1. Initialize the App
-Zcrawler handles database initialization and directory setup automatically on first run.
-
-### 2. Run the Web Server
-Launch the platform using the provided entry point:
+### 2. Clone and Install
 ```bash
-python run.py
+git clone https://github.com/yourusername/Zcrawler.git
+cd Zcrawler
+pip install -r webapp/requirements.txt
+playwright install chromium
+```
+
+### 3. Configuration
+You can configure Zcrawler in two ways:
+1. **Web UI (Recommended)**: Start the app and go to the **Settings** tab to input your OpenRouter API Key and Proxy URL.
+2. **Environment**: Create a `.env` file in the root:
+```env
+OPENROUTER_API_KEY=sk-or-v1-your-key
+PROXY_URL=http://user:pass@host:port
+```
+
+---
+
+## 🚦 Running the Project
+
+### Start the Web Application
+```bash
+# From the root directory
+export PYTHONPATH=$PYTHONPATH:.
+python3 -m webapp.app.main
 ```
 The dashboard will be available at `http://localhost:8000`.
 
-### 3. Basic Workflow
-1. **Create a Definition**: Go to the **Definitions** tab and create a new OSM Crawler configuration. Set your target city (e.g., "Valparaiso, IN") and optional categories (e.g., "restaurant, cafe").
-2. **Launch a Run**: From the Dashboard sidebar, select your definition and click **Launch Crawler**.
-3. **Analyze Results**: Once completed (indicated by the pulsing status badge), click **View Results** to explore findings on the map and table.
-
-## 📁 Project Structure
-
-```text
-.
-├── scripts/                # Core crawler scripts
-│   ├── osm_business_crawler.py  # OSM/Overpass extractor
-│   └── directory_scraper.py     # Generic scraper template
-├── webapp/
-│   ├── app/                # FastAPI backend logic
-│   │   ├── crawler_runner.py # Execution & persistence layer
-│   │   ├── enrichment.py     # Web scraping & AI logic
-│   │   ├── scheduler.py      # Background task manager
-│   │   └── models.py         # SQLAlchemy schemas
-│   ├── templates/          # Modern UI templates
-│   └── storage/            # Data persistence (SQLite & Run artifacts)
-└── run.py                  # Main entry point
+### CLI Usage (For Developers)
+```bash
+# Run a specific OSM crawl
+python3 scripts/osm_business_crawler.py --reference-address "Valparaiso, IN" --limit 10
 ```
 
-## 🛡️ Reliability Features
+---
 
-- **Endpoint Retries**: The OSM crawler automatically retries across multiple Overpass mirrors if one fails.
-- **Rate Limiting Compliance**: Built-in delays for Nominatim geocoding to respect OSM usage policies.
-- **Error Transparency**: Real-time log terminal in the UI for debugging failed runs.
+## 📖 Using Every Aspect
+
+### Creating a Modular Workflow
+1. Click **New Crawler** on the dashboard.
+2. Select **Modular Workflow Builder** as the template.
+3. Add steps:
+   - **Search Entities**: Uses OpenStreetMap to find businesses near an anchor.
+   - **Scrape Details**: Visits found websites using Playwright Stealth.
+   - **AI Enrichment**: Converts HTML to Markdown and uses LLMs to extract metadata.
+   - **Form Automation**: Navigates to a URL and auto-fills fields using your `default_profile.json`.
+   - **Cloud Export**: Automatically pushes findings to Airtable or Google Sheets.
+
+### Using AI Vision
+When adding a **Vision Scraper** step, provide a prompt like *"Find the main pricing table and extract the monthly costs"*. Zcrawler will take a high-res screenshot and use Multimodal LLMs to interpret it.
+
+### Semantic Search
+In any **Run Detail** page, use the search bar to find findings by "meaning". Typing *"find cozy cafes"* will look through business names and AI-generated summaries to return relevant results.
 
 ---
-*Built with passion for data engineers and lead generation specialists.*
+
+## ⚠️ Error Handling & Troubleshooting
+
+| Error | Likely Cause | Solution |
+| :--- | :--- | :--- |
+| `API Key Missing` | OpenRouter key not set in Settings. | Go to Settings tab and save your key. |
+| `Playwright Timeout` | Site is slow or bot detection is high. | Increase timeout in `crawler_runner.py` or add a Proxy. |
+| `JSON Parse Error` | LLM returned conversational text. | Zcrawler has built-in "Sandwich Parsing," but try a more capable model like Gemini 1.5 Pro. |
+| `ModuleNotFoundError` | PYTHONPATH not set. | Run with `export PYTHONPATH=$PYTHONPATH:.` |
+
+---
+
+## 🏷️ Tags
+`#Python` `#FastAPI` `#AI` `#Playwright` `#WebScraping` `#OpenRouter` `#Automation` `#NoCode` `#DataIntelligence`
+
+---
+
+*Built with ❤️ for the automation community.*

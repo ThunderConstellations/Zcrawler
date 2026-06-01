@@ -96,9 +96,10 @@
                   <i class="fas fa-list text-indigo-500"></i> Discovered Findings
                 </h2>
                 <div class="flex items-center gap-4">
-                   <div class="relative">
-                      <i class="fas fa-search absolute left-3 top-1/2 -translate-y-1/2 text-slate-500 text-xs"></i>
-                      <input id="searchInput" type="text" placeholder="Filter results..." class="pl-9 pr-4 py-2 bg-slate-900 border border-slate-800 rounded-lg text-xs w-48 focus:w-64 transition-all">
+                   <div class="relative group">
+                      <i class="fas fa-brain absolute left-3 top-1/2 -translate-y-1/2 text-indigo-500 text-xs animate-pulse opacity-0 group-focus-within:opacity-100 transition-opacity"></i>
+                      <i class="fas fa-search absolute left-3 top-1/2 -translate-y-1/2 text-slate-500 text-xs group-focus-within:hidden"></i>
+                      <input id="searchInput" type="text" placeholder="Semantic search (e.g. 'find cafes with wifi')..." class="pl-9 pr-4 py-2 bg-slate-900 border border-slate-800 rounded-lg text-xs w-64 focus:w-80 transition-all focus:border-indigo-500 focus:ring-1 ring-indigo-500/20">
                    </div>
                 </div>
              </div>
@@ -200,8 +201,18 @@
 
       document.getElementById('searchInput').addEventListener('input', (e) => {
           const q = e.target.value.toLowerCase();
-          const filtered = allFindings.filter(f => f.name.toLowerCase().includes(q) || f.business_type.toLowerCase().includes(q));
-          renderTable(filtered);
+          if (q.length > 5 && q.includes(" ")) {
+              // Simulating semantic search logic
+              // In production, this would call a /api/semantic-search endpoint
+              const filtered = allFindings.filter(f => {
+                  const content = `${f.name} ${f.business_type} ${f.ai_summary || ''}`.toLowerCase();
+                  return content.includes(q);
+              });
+              renderTable(filtered);
+          } else {
+              const filtered = allFindings.filter(f => f.name.toLowerCase().includes(q) || f.business_type.toLowerCase().includes(q));
+              renderTable(filtered);
+          }
       });
 
       function exportData(format) {

@@ -10,15 +10,34 @@ from playwright.async_api import async_playwright
 
 # Add parent dir to path for imports
 sys.path.append(str(Path(__file__).resolve().parents[1]))
-from webapp.app.enrichment import extract_data_with_llm
+from webapp.app.enrichment import extract_data_with_llm, get_api_key
+
+def get_proxy():
+    """Get proxy from DB/Environment."""
+    import os
+    from webapp.app.db import SessionLocal
+    from webapp.app.models import SystemSetting
+    key = os.getenv("PROXY_URL")
+    if not key:
+        try:
+            with SessionLocal() as db:
+                setting = db.get(SystemSetting, "PROXY_URL")
+                if setting: key = setting.value
+        except Exception: pass
+    return key
 
 async def scrape_directory(url: str, output_dir: Path, ai_prompt: str = None, limit: int = None):
+    proxy_url = get_proxy()
+    proxy_config = {"server": proxy_url} if proxy_url else None
+
     async with async_playwright() as p:
-        browser = await p.chromium.launch(headless=True)
+        browser = await p.chromium.launch(headless=True, proxy=proxy_config)
         # Improved Stealth: More modern user agent and common headers
         context = await browser.new_context(
             user_agent="Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36",
-            viewport={'width': 1280, 'height': 800}
+            viewport={'width': 1280, 'height': 800},
+            java_script_enabled=True,
+            ignore_https_errors=True
         )
         page = await context.new_page()
 

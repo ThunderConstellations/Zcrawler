@@ -2,6 +2,7 @@ import re
 import json
 import os
 import time
+import base64
 import httpx
 from typing import Dict, List, Optional, Any
 from bs4 import BeautifulSoup
@@ -182,3 +183,38 @@ def extract_data_with_llm(html: str, fields: List[str]) -> Dict[str, Any]:
     except Exception as e:
         print(f"Error parsing LLM extraction JSON: {e}")
         return {}
+
+def vision_extract_from_image(image_path: str, prompt: str) -> Optional[str]:
+    """Use a multimodal LLM to extract info from a screenshot."""
+    api_key = get_api_key()
+    if not api_key: return None
+
+    with open(image_path, "rb") as image_file:
+        base64_image = base64.b64encode(image_file.read()).decode('utf-8')
+
+    headers = {
+        "Authorization": f"Bearer {api_key}",
+        "Content-Type": "application/json"
+    }
+
+    payload = {
+        "model": "google/gemini-2.0-flash-001",
+        "messages": [
+            {
+                "role": "user",
+                "content": [
+                    {"type": "text", "text": prompt},
+                    {"type": "image_url", "image_url": {"url": f"data:image/jpeg;base64,{base64_image}"}}
+                ]
+            }
+        ]
+    }
+
+    try:
+        with httpx.Client() as client:
+            response = client.post(OPENROUTER_URL, headers=headers, json=payload, timeout=60.0)
+            response.raise_for_status()
+            return response.json()["choices"][0]["message"]["content"]
+    except Exception as e:
+        print(f"Vision API error: {e}")
+        return None

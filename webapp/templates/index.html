@@ -235,6 +235,15 @@
                   <p class="mt-2 text-[10px] text-slate-500 italic">Used for AI summaries and structured data extraction. Get one at <a href="https://openrouter.ai/" target="_blank" class="text-indigo-400">openrouter.ai</a>.</p>
                 </div>
 
+                <div>
+                  <label class="block text-xs font-bold text-slate-500 uppercase mb-2">Global Proxy (Optional)</label>
+                  <div class="flex gap-2">
+                    <input id="setting-proxy-url" type="text" placeholder="http://username:password@host:port" class="flex-1 rounded-xl px-4 py-3">
+                    <button onclick="saveSetting('PROXY_URL', 'setting-proxy-url')" class="btn-primary px-6 py-3 rounded-xl font-bold">Update</button>
+                  </div>
+                  <p class="mt-2 text-[10px] text-slate-500 italic">Used for bypassing regional blocks or IP rate limits.</p>
+                </div>
+
                 <div class="pt-6 border-t border-slate-800">
                   <h4 class="text-white font-bold text-sm mb-4">Crawler Defaults</h4>
                   <div class="grid grid-cols-2 gap-4">
@@ -420,9 +429,12 @@
               <option value="search" ${type === 'search' ? 'selected' : ''}>1. Search Entities</option>
               <option value="scrape" ${type === 'scrape' ? 'selected' : ''}>2. Scrape Details</option>
               <option value="enrich" ${type === 'enrich' ? 'selected' : ''}>3. AI Enrichment</option>
-              <option value="form" ${type === 'form' ? 'selected' : ''}>4. Form Automation</option>
+              <option value="vision_scrape" ${type === 'vision_scrape' ? 'selected' : ''}>4. Vision Scraper (Multimodal)</option>
+              <option value="form" ${type === 'form' ? 'selected' : ''}>5. Form Automation</option>
+              <option value="export_airtable" ${type === 'export_airtable' ? 'selected' : ''}>5. Export to Airtable</option>
+              <option value="export_google" ${type === 'export_google' ? 'selected' : ''}>6. Export to Google Sheets</option>
             </select>
-            <input type="text" placeholder="Step description or parameters..." class="step-config w-full bg-slate-900/50 border-slate-700 rounded-lg px-2 py-1 text-xs text-slate-300" value="${config.desc || ''}">
+            <input type="text" placeholder="Params (e.g. 'categories:cafe' or 'airtable_base_id')" class="step-config w-full bg-slate-900/50 border-slate-700 rounded-lg px-2 py-1 text-xs text-slate-300" value="${config.desc || ''}">
           </div>
           <button onclick="document.getElementById('step-${stepId}').remove()" class="text-slate-600 hover:text-red-400 transition-colors opacity-0 group-hover:opacity-100">
             <i class="fas fa-trash-alt"></i>
@@ -597,6 +609,7 @@
           const settings = await res.json();
           settings.forEach(s => {
             if (s.key === 'OPENROUTER_API_KEY') document.getElementById('setting-openrouter-key').value = s.value;
+            if (s.key === 'PROXY_URL') document.getElementById('setting-proxy-url').value = s.value;
           });
         }
       }
