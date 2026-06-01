@@ -10,6 +10,9 @@ class CrawlerDefinitionBase(BaseModel):
     name: str
     description: Optional[str] = None
     template_key: str
+    recipe_type: Optional[str] = None
+    ai_prompt: Optional[str] = None
+    webhook_url: Optional[str] = None
     config_json: str
 
 
@@ -25,10 +28,23 @@ class CrawlerDefinitionResponse(CrawlerDefinitionBase):
     class Config:
         from_attributes = True
 
+class SystemSettingBase(BaseModel):
+    key: str
+    value: str
+
+class SystemSettingResponse(SystemSettingBase):
+    updated_at: datetime
+
+    class Config:
+        from_attributes = True
+
 
 class CreateRunRequest(BaseModel):
     definition_id: Optional[str] = Field(
         None, description="The ID of the crawler definition to run."
+    )
+    webhook_url: Optional[str] = Field(
+        None, description="Optional webhook URL to notify when run completes."
     )
     # Fields for ad-hoc or backward compatibility
     reference_address: str = Field(

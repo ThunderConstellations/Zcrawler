@@ -25,6 +25,9 @@ class CrawlerDefinition(Base):
     description: Mapped[str | None] = mapped_column(Text, nullable=True)
 
     template_key: Mapped[str] = mapped_column(String(100), index=True)
+    recipe_type: Mapped[str | None] = mapped_column(String(100), nullable=True)
+    ai_prompt: Mapped[str | None] = mapped_column(Text, nullable=True)
+    webhook_url: Mapped[str | None] = mapped_column(Text, nullable=True)
     config_json: Mapped[str] = mapped_column(Text)
 
     created_at: Mapped[datetime] = mapped_column(
@@ -53,6 +56,7 @@ class CrawlRun(Base):
 
     reference_address: Mapped[str] = mapped_column(Text)
     city_query: Mapped[str] = mapped_column(Text)
+    webhook_url: Mapped[str | None] = mapped_column(Text, nullable=True)
     params_json: Mapped[str] = mapped_column(Text)
 
     output_dir: Mapped[str] = mapped_column(Text)
@@ -122,3 +126,10 @@ class CrawlerSchedule(Base):
     next_run_at: Mapped[datetime | None] = mapped_column(DateTime, nullable=True)
 
     created_at: Mapped[datetime] = mapped_column(DateTime, default=datetime.utcnow)
+
+class SystemSetting(Base):
+    __tablename__ = "system_settings"
+
+    key: Mapped[str] = mapped_column(String(50), primary_key=True)
+    value: Mapped[str] = mapped_column(Text)
+    updated_at: Mapped[datetime] = mapped_column(DateTime, default=datetime.utcnow, onupdate=datetime.utcnow)

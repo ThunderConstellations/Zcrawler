@@ -1,7 +1,70 @@
 import re
-import urllib.request
-from typing import Dict, List, Optional
 import json
+import os
+import time
+import base64
+import httpx
+from typing import Dict, List, Optional, Any
+from bs4 import BeautifulSoup
+import html2text
+from dotenv import load_dotenv
+from webapp.app.db import SessionLocal
+from webapp.app.models import SystemSetting
+
+load_dotenv()
+
+def get_api_key():
+    """Get API key from DB or environment."""
+    key = os.getenv("OPENROUTER_API_KEY")
+    if not key:
+        try:
+            with SessionLocal() as db:
+                setting = db.get(SystemSetting, "OPENROUTER_API_KEY")
+                if setting:
+                    key = setting.value
+        except Exception:
+            pass
+    return key
+
+OPENROUTER_URL = "https://openrouter.ai/api/v1/chat/completions"
+
+def call_openrouter(prompt: str, model: str = "google/gemini-2.0-flash-001", retries: int = 3) -> Optional[str]:
+    """Call OpenRouter API with a prompt and basic retry logic."""
+    api_key = get_api_key()
+    if not api_key:
+        return None
+
+    headers = {
+        "Authorization": f"Bearer {api_key}",
+        "Content-Type": "application/json",
+        "HTTP-Referer": "https://github.com/yourusername/Zcrawler",
+        "X-Title": "Zcrawler"
+    }
+
+    payload = {
+        "model": model,
+        "messages": [
+            {"role": "user", "content": prompt}
+        ]
+    }
+
+    for attempt in range(retries):
+        try:
+            with httpx.Client() as client:
+                response = client.post(OPENROUTER_URL, headers=headers, json=payload, timeout=45.0)
+                if response.status_code == 429: # Rate limit
+                     wait = (attempt + 1) * 5
+                     print(f"Rate limited. Waiting {wait}s...")
+                     time.sleep(wait)
+                     continue
+                response.raise_for_status()
+                data = response.json()
+                return data["choices"][0]["message"]["content"]
+        except Exception as e:
+            print(f"OpenRouter API error (attempt {attempt+1}): {e}")
+            if attempt < retries - 1:
+                time.sleep(2 ** attempt)
+    return None
 
 def extract_basic_info_from_url(url: str) -> Dict[str, str]:
     """Scrape website meta tags for description and look for social links."""
@@ -9,36 +72,29 @@ def extract_basic_info_from_url(url: str) -> Dict[str, str]:
         return {}
 
     try:
-        req = urllib.request.Request(url, headers={'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/91.0.4472.124 Safari/537.36'})
-        with urllib.request.urlopen(req, timeout=5) as response:
-            html = response.read().decode('utf-8', errors='ignore')
+        headers = {'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/91.0.4472.124 Safari/537.36'}
+        with httpx.Client(headers=headers, follow_redirects=True) as client:
+            response = client.get(url, timeout=10.0)
+            response.raise_for_status()
+            html = response.text
+            soup = BeautifulSoup(html, 'html.parser')
 
-            # Find description (standard and OpenGraph)
+            # Find description
             description = ""
-            patterns = [
-                r'<meta\s+name=["\']description["\']\s+content=["\']([^"\']+)["\']',
-                r'<meta\s+property=["\']og:description["\']\s+content=["\']([^"\']+)["\']',
-                r'<meta\s+content=["\']([^"\']+)["\']\s+name=["\']description["\']',
-            ]
-            for p in patterns:
-                m = re.search(p, html, re.I)
-                if m:
-                    description = m.group(1)
-                    break
+            desc_tag = soup.find('meta', attrs={'name': 'description'}) or \
+                       soup.find('meta', attrs={'property': 'og:description'})
+            if desc_tag:
+                description = desc_tag.get('content', '')
 
             # Find title
-            title = ""
-            t_match = re.search(r'<title>(.*?)</title>', html, re.I | re.S)
-            if t_match:
-                title = t_match.group(1).strip()
+            title = soup.title.string.strip() if soup.title else ""
 
             # Look for common social links
             socials = {}
             for platform in ['facebook', 'instagram', 'twitter', 'linkedin']:
-                pattern = f'href=["\'](https?://(www\.)?{platform}\.com/[^"\']+)["\']'
-                m = re.search(pattern, html, re.I)
-                if m:
-                    socials[platform] = m.group(1)
+                link = soup.find('a', href=re.compile(rf'{platform}\.com', re.I))
+                if link:
+                    socials[platform] = link['href']
 
             # Try to find an email
             email = ""
@@ -50,13 +106,115 @@ def extract_basic_info_from_url(url: str) -> Dict[str, str]:
                 "description": description,
                 "title": title,
                 "social_links": json.dumps(socials),
-                "scraped_email": email
+                "scraped_email": email,
+                "raw_html": html[:25000] # Increased limit for LLM processing
             }
-    except Exception:
+    except Exception as e:
+        print(f"Scraping error for {url}: {e}")
         return {}
 
 def generate_ai_summary(name: str, type: str, description: str) -> str:
-    """Mock AI summary generation."""
-    if not description:
-        return f"{name} is a {type} located in this area."
-    return f"{name} ({type}): {description[:150]}..."
+    """Generate AI summary using OpenRouter."""
+    api_key = get_api_key()
+    if not api_key:
+        if not description:
+            return f"{name} is a {type} located in this area."
+        return f"{name} ({type}): {description[:150]}..."
+
+    prompt = f"Summarize this business in one short sentence: Name: {name}, Type: {type}, Description: {description}"
+    summary = call_openrouter(prompt)
+    return summary.strip() if summary else f"{name} is a {type}."
+
+def html_to_markdown(html: str) -> str:
+    """Convert HTML to clean markdown to save tokens."""
+    h = html2text.HTML2Text()
+    h.ignore_links = False
+    h.ignore_images = True
+    h.ignore_tables = False
+    return h.handle(html)
+
+def extract_data_with_llm(html: str, fields: List[str]) -> Dict[str, Any]:
+    """Use LLM to extract structured data from HTML, optimized with Markdown and schema enforcement."""
+    api_key = get_api_key()
+    if not api_key:
+        return {}
+
+    # Optimize: Convert to markdown to save significantly on tokens
+    content = html_to_markdown(html)
+
+    schema_example = json.dumps({
+        "businesses": [
+            {f: "example_value" for f in fields}
+        ]
+    })
+
+    prompt = f"""
+    Task: Extract structured business data from the following webpage content.
+    Return ONLY a valid JSON object. Do not include any conversational text or explanations.
+
+    Schema:
+    {schema_example}
+
+    Content (Markdown):
+    {content[:15000]}
+    """
+
+    result = call_openrouter(prompt)
+    if not result:
+        return {}
+
+    try:
+        # Robust JSON extraction: look for the first '{' and last '}'
+        json_start = result.find('{')
+        json_end = result.rfind('}') + 1
+        if json_start == -1 or json_end == 0:
+             return {}
+
+        json_str = result[json_start:json_end]
+        data = json.loads(json_str)
+
+        # Simple validation: ensure 'businesses' key exists and is a list
+        if "businesses" not in data or not isinstance(data["businesses"], list):
+            if isinstance(data, list): # LLM might return a list directly
+                return {"businesses": data}
+            return {"businesses": []}
+
+        return data
+    except Exception as e:
+        print(f"Error parsing LLM extraction JSON: {e}")
+        return {}
+
+def vision_extract_from_image(image_path: str, prompt: str) -> Optional[str]:
+    """Use a multimodal LLM to extract info from a screenshot."""
+    api_key = get_api_key()
+    if not api_key: return None
+
+    with open(image_path, "rb") as image_file:
+        base64_image = base64.b64encode(image_file.read()).decode('utf-8')
+
+    headers = {
+        "Authorization": f"Bearer {api_key}",
+        "Content-Type": "application/json"
+    }
+
+    payload = {
+        "model": "google/gemini-2.0-flash-001",
+        "messages": [
+            {
+                "role": "user",
+                "content": [
+                    {"type": "text", "text": prompt},
+                    {"type": "image_url", "image_url": {"url": f"data:image/jpeg;base64,{base64_image}"}}
+                ]
+            }
+        ]
+    }
+
+    try:
+        with httpx.Client() as client:
+            response = client.post(OPENROUTER_URL, headers=headers, json=payload, timeout=60.0)
+            response.raise_for_status()
+            return response.json()["choices"][0]["message"]["content"]
+    except Exception as e:
+        print(f"Vision API error: {e}")
+        return None

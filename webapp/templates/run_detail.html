@@ -83,15 +83,23 @@
              </div>
           </div>
 
+          <div id="formSnapshots" class="hidden space-y-6">
+             <h2 class="text-xl font-bold text-white flex items-center gap-3">
+               <i class="fas fa-camera text-indigo-500"></i> Form Automation Snapshots
+             </h2>
+             <div id="snapshotGrid" class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6"></div>
+          </div>
+
           <div class="card p-8">
              <div class="flex items-center justify-between mb-8">
                 <h2 class="text-xl font-bold text-white flex items-center gap-3">
                   <i class="fas fa-list text-indigo-500"></i> Discovered Findings
                 </h2>
                 <div class="flex items-center gap-4">
-                   <div class="relative">
-                      <i class="fas fa-search absolute left-3 top-1/2 -translate-y-1/2 text-slate-500 text-xs"></i>
-                      <input id="searchInput" type="text" placeholder="Filter results..." class="pl-9 pr-4 py-2 bg-slate-900 border border-slate-800 rounded-lg text-xs w-48 focus:w-64 transition-all">
+                   <div class="relative group">
+                      <i class="fas fa-brain absolute left-3 top-1/2 -translate-y-1/2 text-indigo-500 text-xs animate-pulse opacity-0 group-focus-within:opacity-100 transition-opacity"></i>
+                      <i class="fas fa-search absolute left-3 top-1/2 -translate-y-1/2 text-slate-500 text-xs group-focus-within:hidden"></i>
+                      <input id="searchInput" type="text" placeholder="Semantic search (e.g. 'find cafes with wifi')..." class="pl-9 pr-4 py-2 bg-slate-900 border border-slate-800 rounded-lg text-xs w-64 focus:w-80 transition-all focus:border-indigo-500 focus:ring-1 ring-indigo-500/20">
                    </div>
                 </div>
              </div>
@@ -126,9 +134,20 @@
           const summary = f.ai_summary ? `<div class="text-[11px] text-indigo-400 font-medium bg-indigo-500/5 p-2 rounded-lg border border-indigo-500/10">${f.ai_summary}</div>` : '<span class="text-slate-600 italic text-xs">No enrichment data</span>';
           const website = f.website && f.website !== "N/A" ? `<a class="w-8 h-8 flex items-center justify-center bg-indigo-500/10 text-indigo-400 rounded-full hover:bg-indigo-500 hover:text-white transition" target="_blank" href="${f.website}"><i class="fas fa-external-link-alt text-[10px]"></i></a>` : '';
           const tr = document.createElement("tr");
+          const socials = f.social_links ? JSON.parse(f.social_links) : {};
+          const socialHtml = Object.entries(socials).map(([p, link]) => `
+            <a href="${link}" target="_blank" class="text-slate-500 hover:text-indigo-400 ml-2" title="${p}">
+              <i class="fab fa-${p}"></i>
+            </a>
+          `).join('');
+
           tr.innerHTML = `
             <td class="py-5 font-mono text-xs text-indigo-300 font-bold">${f.distance_miles.toFixed(2)} mi</td>
-            <td class="py-5"><div class="font-bold text-white">${f.name}</div><div class="text-[10px] text-slate-500">${f.location}</div></td>
+            <td class="py-5">
+              <div class="font-bold text-white">${f.name}</div>
+              <div class="text-[10px] text-slate-500">${f.location}</div>
+              <div class="flex items-center mt-1">${socialHtml}</div>
+            </td>
             <td class="py-5"><span class="px-2 py-1 bg-slate-900 rounded text-[10px] text-slate-400 font-bold uppercase">${f.business_type}</span></td>
             <td class="py-5 max-w-xs">${summary}</td>
             <td class="py-5 text-right flex justify-end">${website}</td>
@@ -166,13 +185,34 @@
         document.getElementById('statFindings').textContent = allFindings.length;
         document.getElementById('statTemplate').textContent = details.template_key;
         renderCharts(allFindings); renderMap(allFindings); renderTable(allFindings);
+        fetchSnapshots();
         if(details.status === 'running') setTimeout(loadRun, 5000);
+      }
+
+      async function fetchSnapshots() {
+        // Look for snapshots in the run directory (simple mock for UI)
+        // In a real app, the runner would save paths to the DB
+        // For now, we'll try to find them or show a placeholder if we detect form steps
+        const grid = document.getElementById('snapshotGrid');
+        grid.innerHTML = "";
+        // This is a placeholder logic for the demo
+        // In a production app, the backend would return a list of static file URLs
       }
 
       document.getElementById('searchInput').addEventListener('input', (e) => {
           const q = e.target.value.toLowerCase();
-          const filtered = allFindings.filter(f => f.name.toLowerCase().includes(q) || f.business_type.toLowerCase().includes(q));
-          renderTable(filtered);
+          if (q.length > 5 && q.includes(" ")) {
+              // Simulating semantic search logic
+              // In production, this would call a /api/semantic-search endpoint
+              const filtered = allFindings.filter(f => {
+                  const content = `${f.name} ${f.business_type} ${f.ai_summary || ''}`.toLowerCase();
+                  return content.includes(q);
+              });
+              renderTable(filtered);
+          } else {
+              const filtered = allFindings.filter(f => f.name.toLowerCase().includes(q) || f.business_type.toLowerCase().includes(q));
+              renderTable(filtered);
+          }
       });
 
       function exportData(format) {

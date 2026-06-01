@@ -4,6 +4,10 @@ from __future__ import annotations
 import shutil
 import os
 import asyncio
+import json
+import subprocess
+import sys
+import tempfile
 from datetime import datetime
 from pathlib import Path
 from typing import Any, Dict, List
@@ -15,14 +19,15 @@ from fastapi.templating import Jinja2Templates
 from sqlalchemy import desc
 from sqlalchemy.orm import Session
 
-from webapp.app.crawler_runner import run_osm_business_crawler
+from webapp.app.crawler_runner import execute_run, _script_command_for_osm, _script_command_for_directory, _load_findings
 from webapp.app.db import SessionLocal, get_db, init_db
-from webapp.app.models import CrawlFinding, CrawlRun, CrawlerDefinition, CrawlerSchedule, new_id
+from webapp.app.models import CrawlFinding, CrawlRun, CrawlerDefinition, CrawlerSchedule, SystemSetting, new_id
 from webapp.app.schemas import (
     CreateRunRequest,
     CrawlerDefinitionCreate,
     CrawlerDefinitionResponse,
     CrawlRunResponse, CrawlerScheduleCreate, CrawlerScheduleResponse,
+    SystemSettingBase, SystemSettingResponse,
 )
 from webapp.app.scheduler import scheduler_loop
 
@@ -69,6 +74,9 @@ def create_definition(definition: CrawlerDefinitionCreate, db: Session = Depends
         name=definition.name,
         description=definition.description,
         template_key=definition.template_key,
+        recipe_type=definition.recipe_type,
+        ai_prompt=definition.ai_prompt,
+        webhook_url=definition.webhook_url,
         config_json=definition.config_json,
     )
     db.add(db_def)
@@ -81,7 +89,13 @@ def update_definition(definition_id: str, definition: CrawlerDefinitionCreate, d
     db_def = db.get(CrawlerDefinition, definition_id)
     if not db_def:
         raise HTTPException(status_code=404, detail="Definition not found")
-    db_def.name, db_def.description, db_def.template_key, db_def.config_json = definition.name, definition.description, definition.template_key, definition.config_json
+    db_def.name = definition.name
+    db_def.description = definition.description
+    db_def.template_key = definition.template_key
+    db_def.recipe_type = definition.recipe_type
+    db_def.ai_prompt = definition.ai_prompt
+    db_def.webhook_url = definition.webhook_url
+    db_def.config_json = definition.config_json
     db.commit()
     db.refresh(db_def)
     return db_def
@@ -113,14 +127,17 @@ def create_run(
     run_dir_str = str(run_dir)
 
     template_key = "osm_business_crawler"
+    webhook_url = request_body.webhook_url
     if request_body.definition_id:
         definition = db.get(CrawlerDefinition, request_body.definition_id)
         if not definition: raise HTTPException(status_code=404, detail="Definition not found")
         template_key = definition.template_key
+        webhook_url = webhook_url or definition.webhook_url
 
     run = CrawlRun(
         id=run_id, definition_id=request_body.definition_id, template_key=template_key,
         status="queued", reference_address=request_body.reference_address, city_query=request_body.city_query,
+        webhook_url=webhook_url,
         params_json=request_body.model_dump_json(), output_dir=run_dir_str, created_at=datetime.utcnow()
     )
     db.add(run)
@@ -128,7 +145,7 @@ def create_run(
 
     def _bg() -> None:
         session = SessionLocal()
-        try: run_osm_business_crawler(run_id=run_id, request=request_body, db=session)
+        try: execute_run(run_id=run_id, request=request_body, db=session)
         finally: session.close()
 
     background_tasks.add_task(_bg)
@@ -166,6 +183,42 @@ def get_findings(run_id: str, db: Session = Depends(get_db)):
     if run is None: raise HTTPException(status_code=404, detail="Run not found")
     return db.query(CrawlFinding).filter(CrawlFinding.run_id == run_id).order_by(CrawlFinding.distance_miles.asc()).all()
 
+@app.post("/api/preview")
+async def preview_crawler(definition: CrawlerDefinitionCreate):
+    """Temporary preview of a crawler without creating a full run."""
+    # Run a limited version of the crawler (e.g., limit=3) and return findings
+    try:
+        config = json.loads(definition.config_json)
+    except Exception:
+        config = {}
+
+    with tempfile.TemporaryDirectory() as tmpdir:
+        tmpdir_path = Path(tmpdir)
+
+        if definition.template_key == "directory_scraper":
+            cmd = _script_command_for_directory(tmpdir_path, config, ai_prompt=definition.ai_prompt, limit=3)
+        elif definition.template_key == "osm_business_crawler":
+            # Mock a CreateRunRequest for OSM preview
+            from webapp.app.schemas import CreateRunRequest
+            mock_request = CreateRunRequest(
+                reference_address=config.get("reference_address", "Valparaiso, IN"),
+                city_query=config.get("city_query", "Valparaiso, IN")
+            )
+            cmd = _script_command_for_osm(mock_request, tmpdir_path, config, limit=3)
+        else:
+            return {"findings": [{"name": f"Preview not supported for {definition.template_key}", "business_type": "Error", "distance_miles": 0.0}]}
+
+        try:
+            # Run the command synchronously (for preview we keep it simple, though async would be better for high load)
+            proc = subprocess.run(cmd, cwd=str(BASE_DIR), capture_output=True, text=True, timeout=120)
+            if proc.returncode != 0:
+                 return {"findings": [{"name": f"Preview script failed (code {proc.returncode})", "business_type": "Error", "details": proc.stderr[:500]}]}
+
+            findings = _load_findings(tmpdir_path)
+            return {"findings": findings}
+        except Exception as e:
+            return {"findings": [{"name": f"Preview failed: {str(e)}", "business_type": "Error", "distance_miles": 0.0}]}
+
 # --- Schedules ---
 
 @app.get("/api/schedules", response_model=List[CrawlerScheduleResponse])
@@ -193,3 +246,21 @@ def delete_schedule(schedule_id: str, db: Session = Depends(get_db)):
     db.delete(db_sched)
     db.commit()
     return {"status": "success"}
+
+# --- System Settings ---
+
+@app.get("/api/settings", response_model=List[SystemSettingResponse])
+def list_settings(db: Session = Depends(get_db)):
+    return db.query(SystemSetting).all()
+
+@app.post("/api/settings", response_model=SystemSettingResponse)
+def update_setting(setting: SystemSettingBase, db: Session = Depends(get_db)):
+    db_setting = db.get(SystemSetting, setting.key)
+    if db_setting:
+        db_setting.value = setting.value
+    else:
+        db_setting = SystemSetting(key=setting.key, value=setting.value)
+        db.add(db_setting)
+    db.commit()
+    db.refresh(db_setting)
+    return db_setting

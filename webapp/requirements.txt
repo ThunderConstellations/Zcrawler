@@ -5,3 +5,7 @@ sqlalchemy
 pydantic
 pydantic-settings
 python-dotenv
+playwright
+httpx
+beautifulsoup4
+html2text
