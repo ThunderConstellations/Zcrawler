@@ -83,6 +83,13 @@
              </div>
           </div>
 
+          <div id="formSnapshots" class="hidden space-y-6">
+             <h2 class="text-xl font-bold text-white flex items-center gap-3">
+               <i class="fas fa-camera text-indigo-500"></i> Form Automation Snapshots
+             </h2>
+             <div id="snapshotGrid" class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6"></div>
+          </div>
+
           <div class="card p-8">
              <div class="flex items-center justify-between mb-8">
                 <h2 class="text-xl font-bold text-white flex items-center gap-3">
@@ -177,7 +184,18 @@
         document.getElementById('statFindings').textContent = allFindings.length;
         document.getElementById('statTemplate').textContent = details.template_key;
         renderCharts(allFindings); renderMap(allFindings); renderTable(allFindings);
+        fetchSnapshots();
         if(details.status === 'running') setTimeout(loadRun, 5000);
+      }
+
+      async function fetchSnapshots() {
+        // Look for snapshots in the run directory (simple mock for UI)
+        // In a real app, the runner would save paths to the DB
+        // For now, we'll try to find them or show a placeholder if we detect form steps
+        const grid = document.getElementById('snapshotGrid');
+        grid.innerHTML = "";
+        // This is a placeholder logic for the demo
+        // In a production app, the backend would return a list of static file URLs
       }
 
       document.getElementById('searchInput').addEventListener('input', (e) => {

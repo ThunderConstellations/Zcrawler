@@ -45,6 +45,9 @@
         <button onclick="showSection('runs')" class="w-full nav-link flex items-center gap-3 px-4 py-3 rounded-xl font-medium">
           <i class="fas fa-history w-5"></i> Run History
         </button>
+        <button onclick="showSection('settings')" class="w-full nav-link flex items-center gap-3 px-4 py-3 rounded-xl font-medium">
+          <i class="fas fa-cog w-5"></i> Settings
+        </button>
       </nav>
       <div class="p-4 border-t border-slate-700">
         <div class="p-4 bg-slate-800/50 rounded-xl">
@@ -214,6 +217,38 @@
                </thead>
                <tbody id="fullRunsTbody" class="divide-y divide-slate-800"></tbody>
              </table>
+           </div>
+        </div>
+
+        <div id="section-settings" class="hidden space-y-6">
+           <h2 class="text-2xl font-bold text-white">System Settings</h2>
+           <div class="card p-8 max-w-2xl">
+              <p class="text-slate-400 mb-6">Configure global parameters for the AI crawler. These settings are applied to all runs and enrichment steps.</p>
+
+              <div class="space-y-6">
+                <div>
+                  <label class="block text-xs font-bold text-slate-500 uppercase mb-2">OpenRouter API Key</label>
+                  <div class="flex gap-2">
+                    <input id="setting-openrouter-key" type="password" placeholder="sk-or-v1-..." class="flex-1 rounded-xl px-4 py-3">
+                    <button onclick="saveSetting('OPENROUTER_API_KEY', 'setting-openrouter-key')" class="btn-primary px-6 py-3 rounded-xl font-bold">Update</button>
+                  </div>
+                  <p class="mt-2 text-[10px] text-slate-500 italic">Used for AI summaries and structured data extraction. Get one at <a href="https://openrouter.ai/" target="_blank" class="text-indigo-400">openrouter.ai</a>.</p>
+                </div>
+
+                <div class="pt-6 border-t border-slate-800">
+                  <h4 class="text-white font-bold text-sm mb-4">Crawler Defaults</h4>
+                  <div class="grid grid-cols-2 gap-4">
+                    <div>
+                      <label class="block text-[10px] text-slate-500 font-bold uppercase mb-1">Max Retries</label>
+                      <input type="number" value="3" class="w-full rounded-lg px-3 py-2 text-sm opacity-50 cursor-not-allowed" disabled>
+                    </div>
+                    <div>
+                      <label class="block text-[10px] text-slate-500 font-bold uppercase mb-1">Browser Timeout (ms)</label>
+                      <input type="number" value="30000" class="w-full rounded-lg px-3 py-2 text-sm opacity-50 cursor-not-allowed" disabled>
+                    </div>
+                  </div>
+                </div>
+              </div>
            </div>
         </div>
       </div>
@@ -544,11 +579,34 @@
         });
       }
 
+      async function saveSetting(key, inputId) {
+        const value = document.getElementById(inputId).value;
+        const res = await fetch('/api/settings', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ key, value })
+        });
+        if (res.ok) {
+          alert('Setting updated successfully');
+        }
+      }
+
+      async function fetchSettings() {
+        const res = await fetch('/api/settings');
+        if (res.ok) {
+          const settings = await res.json();
+          settings.forEach(s => {
+            if (s.key === 'OPENROUTER_API_KEY') document.getElementById('setting-openrouter-key').value = s.value;
+          });
+        }
+      }
+
       async function fetchData() {
         const [dRes, rRes, sRes] = await Promise.all([fetch('/api/definitions'), fetch('/api/runs'), fetch('/api/schedules')]);
         if (dRes.ok) renderDefinitions(await dRes.json());
         if (rRes.ok) renderRuns(await rRes.json());
         if (sRes.ok) renderSchedules(await sRes.json());
+        fetchSettings();
       }
 
       document.getElementById("createRunForm").addEventListener("submit", async (e) => {

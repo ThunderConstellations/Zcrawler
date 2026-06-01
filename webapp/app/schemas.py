@@ -28,6 +28,16 @@ class CrawlerDefinitionResponse(CrawlerDefinitionBase):
     class Config:
         from_attributes = True
 
+class SystemSettingBase(BaseModel):
+    key: str
+    value: str
+
+class SystemSettingResponse(SystemSettingBase):
+    updated_at: datetime
+
+    class Config:
+        from_attributes = True
+
 
 class CreateRunRequest(BaseModel):
     definition_id: Optional[str] = Field(

@@ -21,12 +21,13 @@ from sqlalchemy.orm import Session
 
 from webapp.app.crawler_runner import execute_run, _script_command_for_osm, _script_command_for_directory, _load_findings
 from webapp.app.db import SessionLocal, get_db, init_db
-from webapp.app.models import CrawlFinding, CrawlRun, CrawlerDefinition, CrawlerSchedule, new_id
+from webapp.app.models import CrawlFinding, CrawlRun, CrawlerDefinition, CrawlerSchedule, SystemSetting, new_id
 from webapp.app.schemas import (
     CreateRunRequest,
     CrawlerDefinitionCreate,
     CrawlerDefinitionResponse,
     CrawlRunResponse, CrawlerScheduleCreate, CrawlerScheduleResponse,
+    SystemSettingBase, SystemSettingResponse,
 )
 from webapp.app.scheduler import scheduler_loop
 
@@ -245,3 +246,21 @@ def delete_schedule(schedule_id: str, db: Session = Depends(get_db)):
     db.delete(db_sched)
     db.commit()
     return {"status": "success"}
+
+# --- System Settings ---
+
+@app.get("/api/settings", response_model=List[SystemSettingResponse])
+def list_settings(db: Session = Depends(get_db)):
+    return db.query(SystemSetting).all()
+
+@app.post("/api/settings", response_model=SystemSettingResponse)
+def update_setting(setting: SystemSettingBase, db: Session = Depends(get_db)):
+    db_setting = db.get(SystemSetting, setting.key)
+    if db_setting:
+        db_setting.value = setting.value
+    else:
+        db_setting = SystemSetting(key=setting.key, value=setting.value)
+        db.add(db_setting)
+    db.commit()
+    db.refresh(db_setting)
+    return db_setting

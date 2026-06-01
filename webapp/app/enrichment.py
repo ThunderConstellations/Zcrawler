@@ -5,19 +5,34 @@ import httpx
 from typing import Dict, List, Optional, Any
 from bs4 import BeautifulSoup
 from dotenv import load_dotenv
+from webapp.app.db import SessionLocal
+from webapp.app.models import SystemSetting
 
 load_dotenv()
 
-OPENROUTER_API_KEY = os.getenv("OPENROUTER_API_KEY")
+def get_api_key():
+    """Get API key from DB or environment."""
+    key = os.getenv("OPENROUTER_API_KEY")
+    if not key:
+        try:
+            with SessionLocal() as db:
+                setting = db.get(SystemSetting, "OPENROUTER_API_KEY")
+                if setting:
+                    key = setting.value
+        except Exception:
+            pass
+    return key
+
 OPENROUTER_URL = "https://openrouter.ai/api/v1/chat/completions"
 
 def call_openrouter(prompt: str, model: str = "google/gemini-2.0-flash-001") -> Optional[str]:
     """Call OpenRouter API with a prompt."""
-    if not OPENROUTER_API_KEY:
+    api_key = get_api_key()
+    if not api_key:
         return None
 
     headers = {
-        "Authorization": f"Bearer {OPENROUTER_API_KEY}",
+        "Authorization": f"Bearer {api_key}",
         "Content-Type": "application/json",
         "HTTP-Referer": "https://github.com/yourusername/Zcrawler", # Required by OpenRouter
         "X-Title": "Zcrawler"
@@ -89,7 +104,8 @@ def extract_basic_info_from_url(url: str) -> Dict[str, str]:
 
 def generate_ai_summary(name: str, type: str, description: str) -> str:
     """Generate AI summary using OpenRouter."""
-    if not OPENROUTER_API_KEY:
+    api_key = get_api_key()
+    if not api_key:
         if not description:
             return f"{name} is a {type} located in this area."
         return f"{name} ({type}): {description[:150]}..."
@@ -100,7 +116,8 @@ def generate_ai_summary(name: str, type: str, description: str) -> str:
 
 def extract_data_with_llm(html: str, fields: List[str]) -> Dict[str, Any]:
     """Use LLM to extract structured data from HTML."""
-    if not OPENROUTER_API_KEY:
+    api_key = get_api_key()
+    if not api_key:
         return {}
 
     prompt = f"Extract the following fields from this HTML and return a JSON object with a 'businesses' key containing a list of objects. Fields: {', '.join(fields)}\n\nHTML:\n{html[:20000]}"
