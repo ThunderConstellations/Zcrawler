@@ -69,7 +69,7 @@
             <i class="fas fa-search absolute left-3 top-1/2 -translate-y-1/2 text-slate-500"></i>
             <input id="globalSearch" type="text" placeholder="Search everything..." class="pl-10 pr-4 py-2 rounded-full w-64 text-sm">
           </div>
-          <button onclick="toggleDefForm()" class="btn-primary px-4 py-2 rounded-full text-sm font-bold text-white flex items-center gap-2">
+          <button onclick="toggleDefForm()" class="bg-indigo-600 hover:bg-indigo-500 px-6 py-3 rounded-full text-sm font-bold text-white flex items-center gap-2 shadow-lg shadow-indigo-500/20 transition-all transform hover:scale-105">
             <i class="fas fa-plus"></i> New Crawler
           </button>
         </div>
@@ -164,7 +164,13 @@
         <!-- Other sections (Definitions, Schedules, Runs) will be managed via JS -->
         <div id="section-definitions" class="hidden space-y-6">
            <div class="flex items-center justify-between">
-             <h2 class="text-2xl font-bold text-white">Crawler Definitions</h2>
+             <div class="flex items-center gap-4">
+                <h2 class="text-xs font-bold text-slate-500 uppercase tracking-wider flex items-center"><i class="fas fa-spider text-indigo-500 mr-3 text-lg"></i>Crawler Definitions</h2>
+                <div class="relative group ml-4">
+                  <i class="fas fa-search absolute left-3 top-1/2 -translate-y-1/2 text-slate-500 text-xs"></i>
+                  <input id="defSearchInput" type="text" placeholder="Search crawlers..." oninput="filterDefinitions()" class="pl-9 pr-4 py-2 bg-slate-900 border border-slate-800 rounded-lg text-xs w-48 focus:w-64 transition-all focus:border-indigo-500 focus:ring-1 ring-indigo-500/20">
+                </div>
+             </div>
              <button onclick="toggleDefForm()" class="btn-primary px-6 py-2 rounded-full font-bold">Add New</button>
            </div>
            <div class="card p-6 overflow-hidden">
@@ -184,7 +190,7 @@
 
         <div id="section-schedules" class="hidden space-y-6">
            <div class="flex items-center justify-between">
-             <h2 class="text-2xl font-bold text-white">Scheduled Tasks</h2>
+             <h2 class="text-xs font-bold text-slate-500 uppercase tracking-wider flex items-center"><i class="fas fa-clock text-indigo-500 mr-3 text-lg"></i>Scheduled Tasks</h2>
              <button onclick="showScheduleModal()" class="btn-primary px-6 py-2 rounded-full font-bold">New Schedule</button>
            </div>
            <div class="card p-6 overflow-hidden">
@@ -203,7 +209,7 @@
         </div>
 
         <div id="section-runs" class="hidden space-y-6">
-           <h2 class="text-2xl font-bold text-white">Full Run History</h2>
+           <h2 class="text-xs font-bold text-slate-500 uppercase tracking-wider flex items-center"><i class="fas fa-history text-indigo-500 mr-3 text-lg"></i>Full Run History</h2>
            <div class="card p-6 overflow-hidden">
              <table class="w-full text-sm">
                <thead>
@@ -221,7 +227,7 @@
         </div>
 
         <div id="section-settings" class="hidden space-y-6">
-           <h2 class="text-2xl font-bold text-white">System Settings</h2>
+           <h2 class="text-xs font-bold text-slate-500 uppercase tracking-wider flex items-center"><i class="fas fa-cog text-indigo-500 mr-3 text-lg"></i>System Settings</h2>
            <div class="card p-8 max-w-2xl">
               <p class="text-slate-400 mb-6">Configure global parameters for the AI crawler. These settings are applied to all runs and enrichment steps.</p>
 
@@ -230,7 +236,7 @@
                   <label class="block text-xs font-bold text-slate-500 uppercase mb-2">OpenRouter API Key</label>
                   <div class="flex gap-2">
                     <input id="setting-openrouter-key" type="password" placeholder="sk-or-v1-..." class="flex-1 rounded-xl px-4 py-3">
-                    <button onclick="saveSetting('OPENROUTER_API_KEY', 'setting-openrouter-key')" class="btn-primary px-6 py-3 rounded-xl font-bold">Update</button>
+                    <button onclick="saveSetting('OPENROUTER_API_KEY', 'setting-openrouter-key', this)" class="btn-primary px-6 py-3 rounded-xl font-bold">Update</button>
                   </div>
                   <p class="mt-2 text-[10px] text-slate-500 italic">Used for AI summaries and structured data extraction. Get one at <a href="https://openrouter.ai/" target="_blank" class="text-indigo-400">openrouter.ai</a>.</p>
                 </div>
@@ -239,7 +245,7 @@
                   <label class="block text-xs font-bold text-slate-500 uppercase mb-2">Global Proxy (Optional)</label>
                   <div class="flex gap-2">
                     <input id="setting-proxy-url" type="text" placeholder="http://username:password@host:port" class="flex-1 rounded-xl px-4 py-3">
-                    <button onclick="saveSetting('PROXY_URL', 'setting-proxy-url')" class="btn-primary px-6 py-3 rounded-xl font-bold">Update</button>
+                    <button onclick="saveSetting('PROXY_URL', 'setting-proxy-url', this)" class="btn-primary px-6 py-3 rounded-xl font-bold">Update</button>
                   </div>
                   <p class="mt-2 text-[10px] text-slate-500 italic">Used for bypassing regional blocks or IP rate limits.</p>
                 </div>
@@ -335,7 +341,7 @@
 
           <div class="flex items-center gap-4 pt-4">
             <button id="saveBtn" onclick="saveDefinition()" class="flex-1 py-4 btn-primary rounded-xl font-bold text-white">Save Definition</button>
-            <button onclick="previewCrawler()" class="px-6 py-4 bg-indigo-500/10 text-indigo-400 rounded-xl font-bold border border-indigo-500/20">Preview</button>
+            <button onclick="previewCrawler(this)" class="px-6 py-4 bg-indigo-500/10 text-indigo-400 rounded-xl font-bold border border-indigo-500/20">Preview</button>
             <button onclick="toggleAdvanced()" class="px-6 py-4 bg-slate-800 rounded-xl text-slate-400 font-bold border border-slate-700">JSON</button>
           </div>
           <div id="advancedConfig" class="hidden mt-4"><label class="block text-xs font-bold text-slate-500 uppercase mb-2">Raw JSON Configuration</label><textarea id="defConfig" rows="8" class="w-full rounded-xl px-4 py-3 font-mono text-xs"></textarea></div>
@@ -485,18 +491,33 @@
         if (res.ok) { toggleDefForm(); fetchData(); }
       }
 
-      async function previewCrawler() {
+      async function previewCrawler(btn) {
         const t = document.getElementById('defTemplate').value;
         const body = {
           template_key: t,
           config_json: JSON.stringify({ url: document.getElementById('confUrl').value, categories: document.getElementById('confCategories').value }),
           ai_prompt: document.getElementById('defAiPrompt').value
         };
-        alert('Previewing crawler... (Check console for output)');
-        const res = await fetch('/api/preview', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(body) });
-        const data = await res.json();
-        console.log('Preview data:', data);
-        alert('Preview found ' + (data.findings?.length || 0) + ' items.');
+        const originalText = btn.textContent;
+        btn.textContent = 'Previewing... ⌛';
+        btn.disabled = true;
+
+        try {
+          const res = await fetch('/api/preview', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(body) });
+          const data = await res.json();
+          console.log('Preview data:', data);
+          btn.textContent = `Found ${data.findings?.length || 0} items! ✨`;
+          setTimeout(() => {
+            btn.textContent = originalText;
+            btn.disabled = false;
+          }, 3000);
+        } catch (e) {
+          btn.textContent = 'Error ❌';
+          setTimeout(() => {
+            btn.textContent = originalText;
+            btn.disabled = false;
+          }, 2000);
+        }
       }
 
       async function deleteDef(id) { if (confirm('Delete definition?')) { const res = await fetch(`/api/definitions/${id}`, { method: 'DELETE' }); if (res.ok) fetchData(); } }
@@ -520,7 +541,7 @@
         tbody.innerHTML = ''; select.innerHTML = '<option value="">-- Ad-hoc Run --</option>';
         defs.forEach(d => {
           const tr = document.createElement('tr');
-          tr.innerHTML = `<td class="py-4"><div class="font-semibold text-white">${d.name}</div><div class="text-xs text-slate-500">${d.description||''}</div></td><td class="py-4 text-slate-400 text-xs">${d.template_key}</td><td class="py-4 text-slate-500 text-xs">${new Date(d.created_at).toLocaleDateString()}</td><td class="py-4 text-right space-x-3"><button onclick="loadDefIntoRun('${d.id}')" class="text-indigo-400 font-bold hover:text-indigo-300">Run</button><button onclick="editDef('${d.id}')" class="text-slate-400 font-bold hover:text-white">Edit</button><button onclick="deleteDef('${d.id}')" class="text-red-400/60 hover:text-red-400 font-bold">Del</button></td>`;
+          tr.innerHTML = `<td class="py-4"><div class="font-semibold text-white">${d.name}</div><div class="text-xs text-slate-500">${d.description||''}</div></td><td class="py-4 text-slate-400 text-xs">${d.template_key}</td><td class="py-4 text-slate-500 text-xs">${new Date(d.created_at).toLocaleDateString()}</td><td class="py-4 text-right space-x-3"><button onclick="loadDefIntoRun('${d.id}')" class="text-indigo-400 font-bold hover:text-indigo-300 focus-visible:ring-2 focus-visible:ring-indigo-500 focus:outline-none rounded">Run</button><button onclick="editDef('${d.id}')" class="text-slate-400 font-bold hover:text-white focus-visible:ring-2 focus-visible:ring-indigo-500 focus:outline-none rounded">Edit</button><button onclick="deleteDef('${d.id}')" aria-label="Delete definition" class="text-red-400/60 hover:text-red-400 font-bold focus-visible:ring-2 focus-visible:ring-red-500 focus:outline-none rounded">Del</button></td>`;
           tbody.appendChild(tr);
           const opt = document.createElement('option'); opt.value = d.id; opt.textContent = d.name; select.appendChild(opt);
         });
@@ -573,9 +594,9 @@
         let total = 0, success = 0;
         runList.forEach((r, i) => {
           total += (r.findings_count||0); if (r.status === 'completed') success++;
-          const rowHtml = `<td class="py-4 font-mono text-[10px] text-slate-400">#${r.id.substring(0,6)}</td><td class="py-4"><span class="px-2 py-0.5 rounded-full border text-[9px] font-bold uppercase ${r.status === 'completed' ? 'border-emerald-500/30 text-emerald-400 bg-emerald-500/10' : 'border-amber-500/30 text-amber-400 bg-amber-500/10'}">${r.status}</span></td><td class="py-4 font-bold text-white">${r.findings_count||0}</td><td class="py-4 text-[10px] text-slate-500 font-medium">${new Date(r.created_at).toLocaleString()}</td><td class="py-4 text-right"><a class="text-indigo-400 font-bold text-xs bg-indigo-500/10 px-3 py-1 rounded-full hover:bg-indigo-500/20 transition" href="/runs/${r.id}">View Results</a></td>`;
+          const rowHtml = `<td class="py-4 font-mono text-[10px] text-slate-400">#${r.id.substring(0,6)}</td><td class="py-4"><span class="px-2 py-0.5 rounded-full border text-[9px] font-bold uppercase ${r.status === 'completed' ? 'border-emerald-500/30 text-emerald-400 bg-emerald-500/10' : 'border-amber-500/30 text-amber-400 bg-amber-500/10'}">${r.status}</span></td><td class="py-4 font-bold text-white">${r.findings_count||0}</td><td class="py-4 text-[10px] text-slate-500 font-medium">${new Date(r.created_at).toLocaleString()}</td><td class="py-4 text-right"><a class="text-indigo-400 font-bold text-xs bg-indigo-500/10 px-3 py-1 rounded-full hover:bg-indigo-500/20 transition focus-visible:ring-2 focus-visible:ring-indigo-500 focus:outline-none" href="/runs/${r.id}">View Results</a></td>`;
           if (i < 5) { const tr = document.createElement("tr"); tr.innerHTML = rowHtml; dashboardTbody.appendChild(tr); }
-          const ftr = document.createElement("tr"); ftr.innerHTML = rowHtml + `<td class="py-4 text-right"><button onclick="deleteRun('${r.id}')" class="text-red-400 text-xs ml-2"><i class="fas fa-trash"></i></button></td>`;
+          const ftr = document.createElement("tr"); ftr.innerHTML = rowHtml + `<td class="py-4 text-right"><button onclick="deleteRun('${r.id}')" aria-label="Delete run" class="text-red-400 text-xs ml-2 focus-visible:ring-2 focus-visible:ring-red-500 focus:outline-none rounded"><i class="fas fa-trash"></i></button></td>`;
           fullTbody.appendChild(ftr);
         });
         document.getElementById('statTotalRuns').textContent = runList.length; document.getElementById('statFindings').textContent = total;
@@ -586,20 +607,26 @@
         schedules = scheds; const tbody = document.getElementById('schedTbody'); tbody.innerHTML = '';
         scheds.forEach(s => {
           const tr = document.createElement('tr');
-          tr.innerHTML = `<td class="py-4 font-semibold text-white">${s.name}</td><td class="py-4 text-slate-400 text-xs">${s.cron_expr}</td><td class="py-4 text-slate-500 text-xs font-medium">${s.next_run_at ? new Date(s.next_run_at).toLocaleString() : 'Pending'}</td><td class="py-4 text-right"><button onclick="deleteSched('${s.id}')" class="text-red-400"><i class="fas fa-trash"></i></button></td>`;
+          tr.innerHTML = `<td class="py-4 font-semibold text-white">${s.name}</td><td class="py-4 text-slate-400 text-xs">${s.cron_expr}</td><td class="py-4 text-slate-500 text-xs font-medium">${s.next_run_at ? new Date(s.next_run_at).toLocaleString() : 'Pending'}</td><td class="py-4 text-right"><button onclick="deleteSched('${s.id}')" aria-label="Delete schedule" class="text-red-400 focus-visible:ring-2 focus-visible:ring-red-500 focus:outline-none rounded"><i class="fas fa-trash"></i></button></td>`;
           tbody.appendChild(tr);
         });
       }
 
-      async function saveSetting(key, inputId) {
+      async function saveSetting(key, inputId, btn) {
         const value = document.getElementById(inputId).value;
+        const originalText = btn.textContent;
         const res = await fetch('/api/settings', {
           method: 'POST',
           headers: { 'Content-Type': 'application/json' },
           body: JSON.stringify({ key, value })
         });
         if (res.ok) {
-          alert('Setting updated successfully');
+          btn.textContent = 'Saved ✨';
+          btn.classList.add('bg-emerald-500', 'border-emerald-500');
+          setTimeout(() => {
+            btn.textContent = originalText;
+            btn.classList.remove('bg-emerald-500', 'border-emerald-500');
+          }, 2000);
         }
       }
 
@@ -629,6 +656,15 @@
       });
 
       function loadDefIntoRun(id) { const d = definitions.find(x => x.id === id); if (!d) return; document.getElementById('runDefId').value = id; document.getElementById('adhocFields').style.opacity = '0.3'; }
+      function filterDefinitions() {
+        const q = document.getElementById('defSearchInput').value.toLowerCase();
+        const rows = document.querySelectorAll('#defTbody tr');
+        rows.forEach(row => {
+          const text = row.textContent.toLowerCase();
+          row.style.display = text.includes(q) ? '' : 'none';
+        });
+      }
+
       fetchData(); setInterval(fetchData, 15000);
     </script>
   </body>

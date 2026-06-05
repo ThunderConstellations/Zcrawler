@@ -132,11 +132,11 @@
         const tbody = document.getElementById("findingsTbody"); tbody.innerHTML = "";
         findings.forEach(f => {
           const summary = f.ai_summary ? `<div class="text-[11px] text-indigo-400 font-medium bg-indigo-500/5 p-2 rounded-lg border border-indigo-500/10">${f.ai_summary}</div>` : '<span class="text-slate-600 italic text-xs">No enrichment data</span>';
-          const website = f.website && f.website !== "N/A" ? `<a class="w-8 h-8 flex items-center justify-center bg-indigo-500/10 text-indigo-400 rounded-full hover:bg-indigo-500 hover:text-white transition" target="_blank" href="${f.website}"><i class="fas fa-external-link-alt text-[10px]"></i></a>` : '';
+          const website = f.website && f.website !== "N/A" ? `<a class="w-8 h-8 flex items-center justify-center bg-indigo-500/10 text-indigo-400 rounded-full hover:bg-indigo-500 hover:text-white transition focus-visible:ring-2 focus-visible:ring-indigo-500 focus:outline-none" target="_blank" rel="noopener noreferrer" aria-label="Visit Website" href="${f.website}"><i class="fas fa-external-link-alt text-[10px]"></i></a>` : '';
           const tr = document.createElement("tr");
           const socials = f.social_links ? JSON.parse(f.social_links) : {};
           const socialHtml = Object.entries(socials).map(([p, link]) => `
-            <a href="${link}" target="_blank" class="text-slate-500 hover:text-indigo-400 ml-2" title="${p}">
+            <a href="${link}" target="_blank" rel="noopener noreferrer" class="text-slate-500 hover:text-indigo-400 ml-2 focus-visible:ring-2 focus-visible:ring-indigo-500 focus:outline-none rounded-full" title="${p}" aria-label="Follow on ${p}">
               <i class="fab fa-${p}"></i>
             </a>
           `).join('');
