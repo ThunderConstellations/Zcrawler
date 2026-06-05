@@ -97,3 +97,11 @@ In any **Run Detail** page, use the search bar to find findings by "meaning". Ty
 ---
 
 *Built with ❤️ for the automation community.*
+
+---
+
+## 🗺️ Roadmap & UX Research
+Interested in the future of Zcrawler? Check out our [UX Research & Feature Proposals](docs/UX_RESEARCH_AND_PROPOSALS.md) for 30+ suggestions on:
+- 🎨 Making automation accessible for non-technical users.
+- 🚀 Advanced AI Vision and Conditional Workflow features.
+- 💼 Autonomous "Auto-Apply" job application systems.
