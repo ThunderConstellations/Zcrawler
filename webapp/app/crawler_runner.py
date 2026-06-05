@@ -118,6 +118,8 @@ def execute_run(run_id: str, request: CreateRunRequest, db: Session) -> None:
 
                         cmd = _script_command_for_osm(request, run_dir, osm_config)
                         subprocess.run(cmd, cwd=REPO_ROOT, stdout=f, stderr=subprocess.STDOUT, check=False)
+                        run.progress, run.status_message = 30, f"Searching {request.reference_address}..."
+                        db.commit()
                         new_rows = _load_findings(run_dir)
                         for row in new_rows:
                             findings.append(CrawlFinding(
@@ -148,6 +150,8 @@ def execute_run(run_id: str, request: CreateRunRequest, db: Session) -> None:
                         else:
                             for b in findings[:3]: # Limit to 3 for safety in modular
                                  if not b.website or b.website == "N/A": continue
+                                 run.progress, run.status_message = 50, f"Enriching {b.name} with AI..."
+                                 db.commit()
                                  f.write(f"Scraping {b.website} to enrich {b.name}...\n")
                                  f.flush()
                                  scrape_dir = run_dir / f"scrape_{idx}_{b.name.replace(' ', '_')}"
@@ -238,7 +242,7 @@ def execute_run(run_id: str, request: CreateRunRequest, db: Session) -> None:
         # Persistence
         db.query(CrawlFinding).filter(CrawlFinding.run_id == run_id).delete()
         db.add_all(findings)
-        run.findings_count, run.status, run.completed_at = len(findings), "completed", datetime.utcnow()
+        run.findings_count, run.status, run.completed_at, run.progress, run.status_message = len(findings), "completed", datetime.utcnow(), 100, "Run completed successfully."
         db.commit()
 
         # Webhook Notification
@@ -257,6 +261,13 @@ def execute_run(run_id: str, request: CreateRunRequest, db: Session) -> None:
 
     except Exception as exc:
         run.status, run.error_message, run.completed_at = "failed", f"{type(exc).__name__}: {exc}", datetime.utcnow()
+        try:
+            from webapp.app.enrichment import analyze_error_with_ai
+            log_tail = ""
+            if log_path.exists():
+                with open(log_path, "r") as lf: log_tail = lf.read()[-2000:]
+            run.ai_fix_suggestion = analyze_error_with_ai(log_tail, run.error_message)
+        except: pass
         logger.error("Run failed: %s", exc, exc_info=True)
         db.commit()
 

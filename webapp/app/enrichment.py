@@ -218,3 +218,64 @@ def vision_extract_from_image(image_path: str, prompt: str) -> Optional[str]:
     except Exception as e:
         print(f"Vision API error: {e}")
         return None
+
+def analyze_sentiment(text: str) -> str:
+    """Analyze sentiment of a text using OpenRouter."""
+    if not text: return "Neutral"
+    api_key = get_api_key()
+    if not api_key: return "Neutral"
+
+    prompt = f"Analyze the sentiment of this text and return ONLY one word (Positive, Neutral, or Negative): {text}"
+    result = call_openrouter(prompt)
+    if result:
+        res = result.strip().lower()
+        if "positive" in res: return "Positive"
+        if "negative" in res: return "Negative"
+    return "Neutral"
+
+def clean_data_with_ai(data_json: str) -> str:
+    """Clean and format data using AI."""
+    api_key = get_api_key()
+    if not api_key: return data_json
+
+    prompt = f"Clean and format this business data JSON. Standardize phone numbers to +E.164 and deduplicate by name/location. Return ONLY the cleaned JSON: {data_json}"
+    result = call_openrouter(prompt)
+    if result:
+        start = result.find("[")
+        if start == -1: start = result.find("{")
+        end = result.rfind("]") + 1
+        if end == 0: end = result.rfind("}") + 1
+        return result[start:end]
+    return data_json
+
+def parse_resume_with_ai(resume_text: str) -> Dict[str, Any]:
+    """Parse resume text into a standard profile JSON."""
+    api_key = get_api_key()
+    if not api_key: return {}
+
+    prompt = f"Parse this resume text and extract full_name, email, phone, skills (list), and a short summary. Return ONLY valid JSON: {resume_text}"
+    result = call_openrouter(prompt)
+    if result:
+        start = result.find("{")
+        end = result.rfind("}") + 1
+        try:
+            return json.loads(result[start:end])
+        except:
+            pass
+    return {}
+
+def generate_cover_letter(profile_json: Dict, job_desc: str) -> str:
+    """Generate a tailored cover letter."""
+    api_key = get_api_key()
+    if not api_key: return "Cover letter generation failed (API Key missing)."
+
+    prompt = f"Write a professional and tailored cover letter for this job: {job_desc}\nUsing this user profile: {json.dumps(profile_json)}"
+    return call_openrouter(prompt) or "Failed to generate cover letter."
+
+def analyze_error_with_ai(log_tail: str, error_msg: str) -> str:
+    """Analyze run error and suggest a fix."""
+    api_key = get_api_key()
+    if not api_key: return "Ensure your API key is correct and check the site manually."
+
+    prompt = f"Analyze this crawler error and log snippet. Suggest a one-click fix or explanation for a non-technical user. Error: {error_msg}\nLog: {log_tail}"
+    return call_openrouter(prompt) or "The site layout might have changed or there is a temporary network issue."
