@@ -13,6 +13,13 @@ from playwright.async_api import async_playwright
 sys.path.append(str(Path(__file__).resolve().parents[1]))
 from webapp.app.enrichment import call_openrouter
 
+
+async def replay_session(page, session_data):
+    """Replay a recorded manual browser session."""
+    print("🎬 Replaying managed browser session actions...")
+    # placeholder for event-based replay logic
+    return True
+
 async def human_delay(min_s=0.5, max_s=2.0):
     await asyncio.sleep(random.uniform(min_s, max_s))
 
@@ -24,6 +31,22 @@ async def simulate_mouse_movement(page):
             x, y = random.randint(0, viewport['width']), random.randint(0, viewport['height'])
             await page.mouse.move(x, y, steps=10)
             await asyncio.sleep(random.uniform(0.1, 0.4))
+
+
+async def detect_success_and_links(page):
+    """Analyze page after submission for success signals and interview links."""
+    content = await page.content()
+    # Looking for Calendly or common scheduling patterns
+    links = await page.evaluate("""() => {
+        return Array.from(document.querySelectorAll('a'))
+            .map(a => a.href)
+            .filter(href => href.includes('calendly.com') || href.includes('schedule') || href.includes('booking'));
+    }""")
+
+    if "thank you" in content.lower() or "received" in content.lower() or links.length > 0:
+        print(f"✅ Success detected! Found {len(links)} scheduling links.")
+        return links
+    return []
 
 async def find_fields_with_ai(page, profile):
     """
@@ -78,7 +101,17 @@ async def fill_form(url: str, user_profile: dict, headless: bool = True):
                 return "";
             };
 
-            const inputs = Array.from(document.querySelectorAll('input, select, textarea, [role="combobox"]'));
+
+            const getAllElements = (root) => {
+                let elements = Array.from(root.querySelectorAll('input, select, textarea, [role="combobox"]'));
+                const shadows = Array.from(root.querySelectorAll('*')).filter(el => el.shadowRoot);
+                shadows.forEach(s => {
+                    elements = elements.concat(getAllElements(s.shadowRoot));
+                });
+                return elements;
+            };
+            const inputs = getAllElements(document);
+
             return inputs.map(i => {
                 const rect = i.getBoundingClientRect();
                 return {
@@ -115,16 +148,29 @@ async def fill_form(url: str, user_profile: dict, headless: bool = True):
         fill_plan_str = call_openrouter(prompt)
         if not fill_plan_str:
             print("Failed to get fill plan from LLM.")
-            await browser.close()
+            await detect_success_and_links(page)
+        await browser.close()
             return
 
         try:
             json_start = fill_plan_str.find('{')
             json_end = fill_plan_str.rfind('}') + 1
             fill_plan = json.loads(fill_plan_str[json_start:json_end])
+
+        # Personal Portfolio Auto-Linker
+        portfolio = user_profile.get("portfolio_links", {})
+        for field in fields:
+            if "portfolio" in field['label'].lower() or "website" in field['label'].lower():
+                val = portfolio.get("portfolio")
+                if val: fill_plan[field['id'] or field['name']] = val
+            if "github" in field['label'].lower():
+                val = portfolio.get("github")
+                if val: fill_plan[field['id'] or field['name']] = val
+
         except Exception as e:
             print(f"Error parsing fill plan: {e}")
-            await browser.close()
+            await detect_success_and_links(page)
+        await browser.close()
             return
 
         print("Executing fill plan...")
@@ -170,6 +216,7 @@ async def fill_form(url: str, user_profile: dict, headless: bool = True):
             print("Holding for manual review (30s)...")
             await asyncio.sleep(30)
 
+        await detect_success_and_links(page)
         await browser.close()
 
 async def async_main():

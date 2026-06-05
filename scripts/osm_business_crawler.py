@@ -69,7 +69,15 @@ def retry_http_post_json(url: str, payload: str, retries: int = 3) -> Optional[D
                 time.sleep(2 ** i) # Exponential backoff
     return None
 
+
 def geocode_address(address: str) -> Tuple[float, float]:
+    # Check if address is already coordinates
+    coord_match = re.match(r"^([-+]?\d+\.\d+),\s*([-+]?\d+\.\d+)$", address)
+    if coord_match:
+        return float(coord_match.group(1)), float(coord_match.group(2))
+
+    params = urllib.parse.urlencode({"q": address, "format": "jsonv2", "limit": 1})
+
     params = urllib.parse.urlencode({"q": address, "format": "jsonv2", "limit": 1})
     url = f"https://nominatim.openstreetmap.org/search?{params}"
     payload = http_get_json(url)

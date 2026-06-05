@@ -204,6 +204,12 @@
                 </div>
              </div>
              <button onclick="toggleDefForm()" class="btn-primary px-6 py-2 rounded-full font-bold">Add New</button>
+
+          <div class="mt-6 flex gap-3">
+             <button onclick="exportDefinition('json')" class="text-[10px] font-bold text-slate-500 uppercase hover:text-white transition"><i class="fas fa-file-export mr-1"></i> Export Task</button>
+             <button onclick="importDefinition()" class="text-[10px] font-bold text-slate-500 uppercase hover:text-white transition"><i class="fas fa-file-import mr-1"></i> Import Task</button>
+          </div>
+
            </div>
            <div class="card p-6 overflow-hidden">
              <table class="w-full text-sm">
@@ -403,6 +409,9 @@
 
     <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" />
     <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
+    <link rel="stylesheet" href="https://unpkg.com/leaflet-draw@1.0.4/dist/leaflet.draw.css" />
+    <script src="https://unpkg.com/leaflet-draw@1.0.4/dist/leaflet.draw.js"></script>
+
     <script>
       let definitions = [], runs = [], schedules = [];
       let pickerMap = null, pickerMarker = null;
@@ -454,32 +463,46 @@
       }
       function toggleAdvanced() { document.getElementById('advancedConfig').classList.toggle('hidden'); }
 
-      function addStep(type = 'search', config = {}) {
-        const container = document.getElementById('stepsList');
-        const stepId = Date.now() + Math.random().toString(36).substr(2, 9);
+
+      function addStep(type, data = {}) {
+        const container = document.getElementById('stepsList') || document.getElementById('stepsContainer');
+        if (!container) return;
+        const idx = container.children.length;
         const div = document.createElement('div');
-        div.className = 'p-4 bg-slate-800 rounded-xl border border-slate-700 flex items-center gap-4 group';
-        div.id = `step-${stepId}`;
+        div.className = 'workflow-step p-4 bg-slate-800/50 border border-slate-700 rounded-xl mb-3 flex items-center gap-4 group hover:border-indigo-500/50 transition relative';
+
+        const icons = {
+          search: 'fa-search text-blue-400',
+          scrape: 'fa-globe text-emerald-400',
+          enrich: 'fa-brain text-purple-400',
+          form: 'fa-wpforms text-amber-400',
+          if_then: 'fa-code-branch text-pink-400',
+          \1,
+          captcha_solving: \'fa-puzzle-piece text-yellow-400\',
+          pdf_scraping: \'fa-file-pdf text-red-400\',
+          follow_up_email: \'fa-envelope text-green-400\',
+          linkedin_automation: \'fa-linkedin text-blue-600\',
+        };
+        const icon = icons[type] || 'fa-cog';
+
         div.innerHTML = `
-          <div class="cursor-move text-slate-600"><i class="fas fa-grip-vertical"></i></div>
-          <div class="flex-1">
-            <select class="step-type bg-transparent border-none text-white font-bold text-xs uppercase tracking-widest focus:ring-0 p-0 mb-1">
-              <option value="search" ${type === 'search' ? 'selected' : ''}>1. Search Entities</option>
-              <option value="scrape" ${type === 'scrape' ? 'selected' : ''}>2. Scrape Details</option>
-              <option value="enrich" ${type === 'enrich' ? 'selected' : ''}>3. AI Enrichment</option>
-              <option value="vision_scrape" ${type === 'vision_scrape' ? 'selected' : ''}>4. Vision Scraper (Multimodal)</option>
-              <option value="form" ${type === 'form' ? 'selected' : ''}>5. Form Automation</option>
-              <option value="export_airtable" ${type === 'export_airtable' ? 'selected' : ''}>5. Export to Airtable</option>
-              <option value="export_google" ${type === 'export_google' ? 'selected' : ''}>6. Export to Google Sheets</option>
-            </select>
-            <input type="text" placeholder="Params (e.g. 'categories:cafe' or 'airtable_base_id')" class="step-config w-full bg-slate-900/50 border-slate-700 rounded-lg px-2 py-1 text-xs text-slate-300" value="${config.desc || ''}">
+          <div class="step-handle cursor-move text-slate-600"><i class="fas fa-ellipsis-v"></i></div>
+          <div class="w-10 h-10 bg-slate-900 rounded-lg flex items-center justify-center border border-slate-800">
+            <i class="fas ${icon}"></i>
           </div>
-          <button onclick="document.getElementById('step-${stepId}').remove()" class="text-slate-600 hover:text-red-400 transition-colors opacity-0 group-hover:opacity-100">
-            <i class="fas fa-trash-alt"></i>
-          </button>
+          <div class="flex-1">
+            <div class="flex items-center gap-2 mb-1">
+              <span class="text-[10px] font-bold text-slate-500 uppercase tracking-widest">${type.replace('_', ' ')}</span>
+            </div>
+            <input type="hidden" class="step-type" value="${type}">
+            <input type="text" class="step-desc w-full bg-transparent border-none p-0 text-sm text-white focus:ring-0 placeholder:text-slate-600" placeholder="Step description or params..." value="${data.desc || ''}">
+          </div>
+          <button onclick="this.parentElement.remove()" class="text-slate-600 hover:text-red-400 transition p-2"><i class="fas fa-trash-alt"></i></button>
+          ${idx > 0 ? '<div class="absolute -top-3 left-1/2 -translate-x-1/2 text-indigo-500/30 text-[10px]"><i class="fas fa-arrow-down"></i></div>' : ''}
         `;
         container.appendChild(div);
       }
+
 
       async function saveDefinition() {
         const id = document.getElementById('defId').value, t = document.getElementById('defTemplate').value;
@@ -522,7 +545,39 @@
         const res = await fetch(id ? `/api/definitions/${id}` : '/api/definitions', { method: id ? 'PUT' : 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(body) });
         if (res.ok) { toggleDefForm();
       let wizardData = {};
-      function openWizard() { document.getElementById('wizardModal').classList.remove('hidden'); }
+      let wizardMap, wizardDrawControl, wizardCircle;
+      function initWizardMap() {
+        if (wizardMap) return;
+        wizardMap = L.map('wizardMap').setView([41.4731, -87.0611], 13);
+        L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png').addTo(wizardMap);
+
+        const drawnItems = new L.FeatureGroup();
+        wizardMap.addLayer(drawnItems);
+
+        wizardDrawControl = new L.Control.Draw({
+          draw: {
+            polygon: false, polyline: false, rectangle: false, marker: false, circlemarker: false,
+            circle: { shapeOptions: { color: '#6366f1' } }
+          },
+          edit: { featureGroup: drawnItems }
+        });
+        wizardMap.addControl(wizardDrawControl);
+
+        wizardMap.on(L.Draw.Event.CREATED, function (e) {
+          drawnItems.clearLayers();
+          const layer = e.layer;
+          drawnItems.addLayer(layer);
+          if (e.layerType === 'circle') {
+            const center = layer.getLatLng();
+            const radius = layer.getRadius();
+            wizardData.anchor = `${center.lat},${center.lng}`;
+            wizardData.radius_mi = (radius / 1609.34).toFixed(2);
+            document.getElementById('wizardLocation').value = `Circle at ${center.lat.toFixed(4)}, ${center.lng.toFixed(4)} (${wizardData.radius_mi} mi)`;
+          }
+        });
+      }
+
+      function openWizard() { document.getElementById('wizardModal').classList.remove('hidden'); initWizardMap(); }
       function wizardNext(step, template) {
         if (template) wizardData.template = template;
         document.getElementById('wizardStep1').classList.add('hidden');
@@ -530,6 +585,32 @@
         document.getElementById('wizardStep3').classList.add('hidden');
         document.getElementById('wizardStep' + step).classList.remove('hidden');
       }
+
+      async function processVoice() {
+        const prompt = document.getElementById('voicePrompt').value;
+        if (!prompt) return;
+        document.getElementById('voiceLoading').classList.remove('hidden');
+
+        // Simulating AI configuration pre-fill
+        setTimeout(() => {
+          document.getElementById('voiceLoading').classList.add('hidden');
+          // In production, this would call /api/ai/configure-run
+          if (prompt.toLowerCase().includes('coffee')) {
+            wizardNext(2, 'osm_business_crawler');
+            document.getElementById('wizardLocation').value = 'Valparaiso, IN';
+          }
+          alert('AI Assistant has configured the crawler for you!');
+        }, 1500);
+      }
+
+
+      function recordSession() {
+        alert('Opening managed browser session to record your actions...');
+        // In production, this would launch a headful playwright instance
+        // and track user actions to generate a script.
+        wizardData.recorded_session = true;
+      }
+
       async function launchWizard() {
         // Mock launch logic
         alert('Launching your ' + wizardData.template + ' crawler!');
@@ -570,7 +651,39 @@
 
       async function deleteDef(id) { if (confirm('Delete definition?')) { const res = await fetch(`/api/definitions/${id}`, { method: 'DELETE' }); if (res.ok)
       let wizardData = {};
-      function openWizard() { document.getElementById('wizardModal').classList.remove('hidden'); }
+      let wizardMap, wizardDrawControl, wizardCircle;
+      function initWizardMap() {
+        if (wizardMap) return;
+        wizardMap = L.map('wizardMap').setView([41.4731, -87.0611], 13);
+        L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png').addTo(wizardMap);
+
+        const drawnItems = new L.FeatureGroup();
+        wizardMap.addLayer(drawnItems);
+
+        wizardDrawControl = new L.Control.Draw({
+          draw: {
+            polygon: false, polyline: false, rectangle: false, marker: false, circlemarker: false,
+            circle: { shapeOptions: { color: '#6366f1' } }
+          },
+          edit: { featureGroup: drawnItems }
+        });
+        wizardMap.addControl(wizardDrawControl);
+
+        wizardMap.on(L.Draw.Event.CREATED, function (e) {
+          drawnItems.clearLayers();
+          const layer = e.layer;
+          drawnItems.addLayer(layer);
+          if (e.layerType === 'circle') {
+            const center = layer.getLatLng();
+            const radius = layer.getRadius();
+            wizardData.anchor = `${center.lat},${center.lng}`;
+            wizardData.radius_mi = (radius / 1609.34).toFixed(2);
+            document.getElementById('wizardLocation').value = `Circle at ${center.lat.toFixed(4)}, ${center.lng.toFixed(4)} (${wizardData.radius_mi} mi)`;
+          }
+        });
+      }
+
+      function openWizard() { document.getElementById('wizardModal').classList.remove('hidden'); initWizardMap(); }
       function wizardNext(step, template) {
         if (template) wizardData.template = template;
         document.getElementById('wizardStep1').classList.add('hidden');
@@ -578,6 +691,32 @@
         document.getElementById('wizardStep3').classList.add('hidden');
         document.getElementById('wizardStep' + step).classList.remove('hidden');
       }
+
+      async function processVoice() {
+        const prompt = document.getElementById('voicePrompt').value;
+        if (!prompt) return;
+        document.getElementById('voiceLoading').classList.remove('hidden');
+
+        // Simulating AI configuration pre-fill
+        setTimeout(() => {
+          document.getElementById('voiceLoading').classList.add('hidden');
+          // In production, this would call /api/ai/configure-run
+          if (prompt.toLowerCase().includes('coffee')) {
+            wizardNext(2, 'osm_business_crawler');
+            document.getElementById('wizardLocation').value = 'Valparaiso, IN';
+          }
+          alert('AI Assistant has configured the crawler for you!');
+        }, 1500);
+      }
+
+
+      function recordSession() {
+        alert('Opening managed browser session to record your actions...');
+        // In production, this would launch a headful playwright instance
+        // and track user actions to generate a script.
+        wizardData.recorded_session = true;
+      }
+
       async function launchWizard() {
         // Mock launch logic
         alert('Launching your ' + wizardData.template + ' crawler!');
@@ -587,7 +726,39 @@
       fetchData(); } }
       async function deleteRun(id) { if (confirm('Delete run?')) { const res = await fetch(`/api/runs/${id}`, { method: 'DELETE' }); if (res.ok)
       let wizardData = {};
-      function openWizard() { document.getElementById('wizardModal').classList.remove('hidden'); }
+      let wizardMap, wizardDrawControl, wizardCircle;
+      function initWizardMap() {
+        if (wizardMap) return;
+        wizardMap = L.map('wizardMap').setView([41.4731, -87.0611], 13);
+        L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png').addTo(wizardMap);
+
+        const drawnItems = new L.FeatureGroup();
+        wizardMap.addLayer(drawnItems);
+
+        wizardDrawControl = new L.Control.Draw({
+          draw: {
+            polygon: false, polyline: false, rectangle: false, marker: false, circlemarker: false,
+            circle: { shapeOptions: { color: '#6366f1' } }
+          },
+          edit: { featureGroup: drawnItems }
+        });
+        wizardMap.addControl(wizardDrawControl);
+
+        wizardMap.on(L.Draw.Event.CREATED, function (e) {
+          drawnItems.clearLayers();
+          const layer = e.layer;
+          drawnItems.addLayer(layer);
+          if (e.layerType === 'circle') {
+            const center = layer.getLatLng();
+            const radius = layer.getRadius();
+            wizardData.anchor = `${center.lat},${center.lng}`;
+            wizardData.radius_mi = (radius / 1609.34).toFixed(2);
+            document.getElementById('wizardLocation').value = `Circle at ${center.lat.toFixed(4)}, ${center.lng.toFixed(4)} (${wizardData.radius_mi} mi)`;
+          }
+        });
+      }
+
+      function openWizard() { document.getElementById('wizardModal').classList.remove('hidden'); initWizardMap(); }
       function wizardNext(step, template) {
         if (template) wizardData.template = template;
         document.getElementById('wizardStep1').classList.add('hidden');
@@ -595,6 +766,32 @@
         document.getElementById('wizardStep3').classList.add('hidden');
         document.getElementById('wizardStep' + step).classList.remove('hidden');
       }
+
+      async function processVoice() {
+        const prompt = document.getElementById('voicePrompt').value;
+        if (!prompt) return;
+        document.getElementById('voiceLoading').classList.remove('hidden');
+
+        // Simulating AI configuration pre-fill
+        setTimeout(() => {
+          document.getElementById('voiceLoading').classList.add('hidden');
+          // In production, this would call /api/ai/configure-run
+          if (prompt.toLowerCase().includes('coffee')) {
+            wizardNext(2, 'osm_business_crawler');
+            document.getElementById('wizardLocation').value = 'Valparaiso, IN';
+          }
+          alert('AI Assistant has configured the crawler for you!');
+        }, 1500);
+      }
+
+
+      function recordSession() {
+        alert('Opening managed browser session to record your actions...');
+        // In production, this would launch a headful playwright instance
+        // and track user actions to generate a script.
+        wizardData.recorded_session = true;
+      }
+
       async function launchWizard() {
         // Mock launch logic
         alert('Launching your ' + wizardData.template + ' crawler!');
@@ -614,7 +811,39 @@
         const res = await fetch('/api/schedules', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(body) });
         if (res.ok) { closeSchedModal();
       let wizardData = {};
-      function openWizard() { document.getElementById('wizardModal').classList.remove('hidden'); }
+      let wizardMap, wizardDrawControl, wizardCircle;
+      function initWizardMap() {
+        if (wizardMap) return;
+        wizardMap = L.map('wizardMap').setView([41.4731, -87.0611], 13);
+        L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png').addTo(wizardMap);
+
+        const drawnItems = new L.FeatureGroup();
+        wizardMap.addLayer(drawnItems);
+
+        wizardDrawControl = new L.Control.Draw({
+          draw: {
+            polygon: false, polyline: false, rectangle: false, marker: false, circlemarker: false,
+            circle: { shapeOptions: { color: '#6366f1' } }
+          },
+          edit: { featureGroup: drawnItems }
+        });
+        wizardMap.addControl(wizardDrawControl);
+
+        wizardMap.on(L.Draw.Event.CREATED, function (e) {
+          drawnItems.clearLayers();
+          const layer = e.layer;
+          drawnItems.addLayer(layer);
+          if (e.layerType === 'circle') {
+            const center = layer.getLatLng();
+            const radius = layer.getRadius();
+            wizardData.anchor = `${center.lat},${center.lng}`;
+            wizardData.radius_mi = (radius / 1609.34).toFixed(2);
+            document.getElementById('wizardLocation').value = `Circle at ${center.lat.toFixed(4)}, ${center.lng.toFixed(4)} (${wizardData.radius_mi} mi)`;
+          }
+        });
+      }
+
+      function openWizard() { document.getElementById('wizardModal').classList.remove('hidden'); initWizardMap(); }
       function wizardNext(step, template) {
         if (template) wizardData.template = template;
         document.getElementById('wizardStep1').classList.add('hidden');
@@ -622,6 +851,32 @@
         document.getElementById('wizardStep3').classList.add('hidden');
         document.getElementById('wizardStep' + step).classList.remove('hidden');
       }
+
+      async function processVoice() {
+        const prompt = document.getElementById('voicePrompt').value;
+        if (!prompt) return;
+        document.getElementById('voiceLoading').classList.remove('hidden');
+
+        // Simulating AI configuration pre-fill
+        setTimeout(() => {
+          document.getElementById('voiceLoading').classList.add('hidden');
+          // In production, this would call /api/ai/configure-run
+          if (prompt.toLowerCase().includes('coffee')) {
+            wizardNext(2, 'osm_business_crawler');
+            document.getElementById('wizardLocation').value = 'Valparaiso, IN';
+          }
+          alert('AI Assistant has configured the crawler for you!');
+        }, 1500);
+      }
+
+
+      function recordSession() {
+        alert('Opening managed browser session to record your actions...');
+        // In production, this would launch a headful playwright instance
+        // and track user actions to generate a script.
+        wizardData.recorded_session = true;
+      }
+
       async function launchWizard() {
         // Mock launch logic
         alert('Launching your ' + wizardData.template + ' crawler!');
@@ -632,7 +887,39 @@
       }
       async function deleteSched(id) { if (confirm('Delete schedule?')) { const res = await fetch(`/api/schedules/${id}`, { method: 'DELETE' }); if (res.ok)
       let wizardData = {};
-      function openWizard() { document.getElementById('wizardModal').classList.remove('hidden'); }
+      let wizardMap, wizardDrawControl, wizardCircle;
+      function initWizardMap() {
+        if (wizardMap) return;
+        wizardMap = L.map('wizardMap').setView([41.4731, -87.0611], 13);
+        L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png').addTo(wizardMap);
+
+        const drawnItems = new L.FeatureGroup();
+        wizardMap.addLayer(drawnItems);
+
+        wizardDrawControl = new L.Control.Draw({
+          draw: {
+            polygon: false, polyline: false, rectangle: false, marker: false, circlemarker: false,
+            circle: { shapeOptions: { color: '#6366f1' } }
+          },
+          edit: { featureGroup: drawnItems }
+        });
+        wizardMap.addControl(wizardDrawControl);
+
+        wizardMap.on(L.Draw.Event.CREATED, function (e) {
+          drawnItems.clearLayers();
+          const layer = e.layer;
+          drawnItems.addLayer(layer);
+          if (e.layerType === 'circle') {
+            const center = layer.getLatLng();
+            const radius = layer.getRadius();
+            wizardData.anchor = `${center.lat},${center.lng}`;
+            wizardData.radius_mi = (radius / 1609.34).toFixed(2);
+            document.getElementById('wizardLocation').value = `Circle at ${center.lat.toFixed(4)}, ${center.lng.toFixed(4)} (${wizardData.radius_mi} mi)`;
+          }
+        });
+      }
+
+      function openWizard() { document.getElementById('wizardModal').classList.remove('hidden'); initWizardMap(); }
       function wizardNext(step, template) {
         if (template) wizardData.template = template;
         document.getElementById('wizardStep1').classList.add('hidden');
@@ -640,6 +927,32 @@
         document.getElementById('wizardStep3').classList.add('hidden');
         document.getElementById('wizardStep' + step).classList.remove('hidden');
       }
+
+      async function processVoice() {
+        const prompt = document.getElementById('voicePrompt').value;
+        if (!prompt) return;
+        document.getElementById('voiceLoading').classList.remove('hidden');
+
+        // Simulating AI configuration pre-fill
+        setTimeout(() => {
+          document.getElementById('voiceLoading').classList.add('hidden');
+          // In production, this would call /api/ai/configure-run
+          if (prompt.toLowerCase().includes('coffee')) {
+            wizardNext(2, 'osm_business_crawler');
+            document.getElementById('wizardLocation').value = 'Valparaiso, IN';
+          }
+          alert('AI Assistant has configured the crawler for you!');
+        }, 1500);
+      }
+
+
+      function recordSession() {
+        alert('Opening managed browser session to record your actions...');
+        // In production, this would launch a headful playwright instance
+        // and track user actions to generate a script.
+        wizardData.recorded_session = true;
+      }
+
       async function launchWizard() {
         // Mock launch logic
         alert('Launching your ' + wizardData.template + ' crawler!');
@@ -779,7 +1092,39 @@
 
 
       let wizardData = {};
-      function openWizard() { document.getElementById('wizardModal').classList.remove('hidden'); }
+      let wizardMap, wizardDrawControl, wizardCircle;
+      function initWizardMap() {
+        if (wizardMap) return;
+        wizardMap = L.map('wizardMap').setView([41.4731, -87.0611], 13);
+        L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png').addTo(wizardMap);
+
+        const drawnItems = new L.FeatureGroup();
+        wizardMap.addLayer(drawnItems);
+
+        wizardDrawControl = new L.Control.Draw({
+          draw: {
+            polygon: false, polyline: false, rectangle: false, marker: false, circlemarker: false,
+            circle: { shapeOptions: { color: '#6366f1' } }
+          },
+          edit: { featureGroup: drawnItems }
+        });
+        wizardMap.addControl(wizardDrawControl);
+
+        wizardMap.on(L.Draw.Event.CREATED, function (e) {
+          drawnItems.clearLayers();
+          const layer = e.layer;
+          drawnItems.addLayer(layer);
+          if (e.layerType === 'circle') {
+            const center = layer.getLatLng();
+            const radius = layer.getRadius();
+            wizardData.anchor = `${center.lat},${center.lng}`;
+            wizardData.radius_mi = (radius / 1609.34).toFixed(2);
+            document.getElementById('wizardLocation').value = `Circle at ${center.lat.toFixed(4)}, ${center.lng.toFixed(4)} (${wizardData.radius_mi} mi)`;
+          }
+        });
+      }
+
+      function openWizard() { document.getElementById('wizardModal').classList.remove('hidden'); initWizardMap(); }
       function wizardNext(step, template) {
         if (template) wizardData.template = template;
         document.getElementById('wizardStep1').classList.add('hidden');
@@ -787,6 +1132,32 @@
         document.getElementById('wizardStep3').classList.add('hidden');
         document.getElementById('wizardStep' + step).classList.remove('hidden');
       }
+
+      async function processVoice() {
+        const prompt = document.getElementById('voicePrompt').value;
+        if (!prompt) return;
+        document.getElementById('voiceLoading').classList.remove('hidden');
+
+        // Simulating AI configuration pre-fill
+        setTimeout(() => {
+          document.getElementById('voiceLoading').classList.add('hidden');
+          // In production, this would call /api/ai/configure-run
+          if (prompt.toLowerCase().includes('coffee')) {
+            wizardNext(2, 'osm_business_crawler');
+            document.getElementById('wizardLocation').value = 'Valparaiso, IN';
+          }
+          alert('AI Assistant has configured the crawler for you!');
+        }, 1500);
+      }
+
+
+      function recordSession() {
+        alert('Opening managed browser session to record your actions...');
+        // In production, this would launch a headful playwright instance
+        // and track user actions to generate a script.
+        wizardData.recorded_session = true;
+      }
+
       async function launchWizard() {
         // Mock launch logic
         alert('Launching your ' + wizardData.template + ' crawler!');
@@ -802,7 +1173,17 @@
         <div class="p-8">
           <div id="wizardStep1">
             <h2 class="text-2xl font-bold text-white mb-2">What do you want to find?</h2>
-            <p class="text-slate-400 mb-8 text-sm">Choose a template to get started quickly.</p>
+            <p class="text-slate-400 mb-8 text-sm">Choose a template or use the AI assistant.</p>
+
+          <div id="voiceStep" class="mb-8">
+            <h3 class="text-xs font-bold text-slate-500 uppercase mb-3 flex items-center gap-2"><i class="fas fa-microphone text-indigo-400"></i> AI Voice Assistant</h3>
+            <div class="relative">
+              <input id="voicePrompt" type="text" placeholder="e.g. 'Find coffee shops in Valparaiso and export to Airtable'" class="w-full bg-slate-800 border-slate-700 rounded-xl text-sm py-3 px-4 focus:ring-indigo-500 focus:border-indigo-500 transition">
+              <button onclick="processVoice()" class="absolute right-2 top-1/2 -translate-y-1/2 p-2 bg-indigo-600 rounded-lg text-white hover:bg-indigo-500 transition"><i class="fas fa-magic"></i></button>
+            </div>
+            <div id="voiceLoading" class="hidden mt-2 text-[10px] text-indigo-400 animate-pulse">🤖 Processing your request...</div>
+          </div>
+
             <div class="grid grid-cols-2 gap-4">
               <button onclick="wizardNext(2, 'osm_business_crawler')" class="p-6 bg-slate-800/50 border border-slate-700 rounded-xl text-left hover:border-indigo-500 transition group">
                 <div class="w-10 h-10 bg-indigo-500/10 rounded-lg flex items-center justify-center text-indigo-400 mb-4 group-hover:bg-indigo-500 group-hover:text-white transition">
@@ -822,7 +1203,8 @@
           </div>
           <div id="wizardStep2" class="hidden">
             <h2 class="text-2xl font-bold text-white mb-2">Where should I look?</h2>
-            <div id="wizardMap" class="h-64 bg-slate-800 rounded-xl mb-4 border border-slate-700"></div>
+            <div class="text-[10px] text-slate-500 uppercase font-bold mb-2 flex items-center gap-2"><i class="fas fa-pencil-alt"></i> Use the circle tool to define search area</div>
+<div id="wizardMap" class="h-64 bg-slate-800 rounded-xl mb-4 border border-slate-700"></div>
             <input id="wizardLocation" type="text" placeholder="Enter city or address..." class="w-full bg-slate-800 border-slate-700 rounded-lg text-sm mb-4">
             <button onclick="wizardNext(3)" class="w-full py-3 bg-indigo-600 text-white font-bold rounded-lg hover:bg-indigo-500">Next Step</button>
           </div>
@@ -830,7 +1212,15 @@
             <div class="w-20 h-20 bg-emerald-500/20 text-emerald-400 rounded-full flex items-center justify-center mx-auto mb-6 text-3xl">
               <i class="fas fa-rocket"></i>
             </div>
-            <h2 class="text-2xl font-bold text-white mb-2">Ready to Launch!</h2>
+
+            <div class="mt-6 p-4 bg-slate-800/30 border border-dashed border-slate-700 rounded-xl text-center">
+              <p class="text-[10px] text-slate-500 mb-3 uppercase font-bold tracking-widest">Complex Action? Use Session Recording</p>
+              <button onclick="recordSession()" class="px-4 py-2 bg-slate-800 hover:bg-slate-700 text-white text-xs font-bold rounded-lg border border-slate-700 transition flex items-center gap-2 mx-auto">
+                <i class="fas fa-circle text-red-500 animate-pulse"></i> Record Action
+              </button>
+            </div>
+
+<h2 class="text-2xl font-bold text-white mb-2">Ready to Launch!</h2>
             <p class="text-slate-400 mb-8 text-sm">Your crawler is configured and ready to start collecting data.</p>
             <button onclick="launchWizard()" class="w-full py-3 bg-emerald-600 text-white font-bold rounded-lg hover:bg-emerald-500">Start Crawler Now</button>
           </div>

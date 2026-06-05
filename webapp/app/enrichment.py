@@ -279,3 +279,38 @@ def analyze_error_with_ai(log_tail: str, error_msg: str) -> str:
 
     prompt = f"Analyze this crawler error and log snippet. Suggest a one-click fix or explanation for a non-technical user. Error: {error_msg}\nLog: {log_tail}"
     return call_openrouter(prompt) or "The site layout might have changed or there is a temporary network issue."
+
+
+def extract_salary_range(html: str) -> Optional[str]:
+    """Extract salary range from job description HTML using AI."""
+    api_key = get_api_key()
+    if not api_key: return None
+
+    # Simple extraction attempt first
+    match = re.search(r'\$[0-9,]+.*-.*\$[0-9,]+', html)
+    if match: return match.group(0)
+
+    # Fallback to AI
+    prompt = f"Extract the annual salary range from this job description. Return ONLY the range (e.g. '$100k - $150k') or 'Not specified': {html[:5000]}"
+    return call_openrouter(prompt)
+
+
+def evaluate_semantic_change(old_data: str, new_data: str, alert_query: str) -> Optional[str]:
+    """Use AI to determine if a change is 'meaningful' based on a user query."""
+    api_key = get_api_key()
+    if not api_key: return None
+
+    prompt = f"""
+    Analyze these two versions of a business's data.
+    User Alert Query: {alert_query}
+
+    Old Version: {old_data}
+    New Version: {new_data}
+
+    Is this a meaningful change that the user should be alerted about?
+    Return 'NO' or a short explanation of the alert.
+    """
+    result = call_openrouter(prompt)
+    if result and "NO" not in result.upper():
+        return result.strip()
+    return None

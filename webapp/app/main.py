@@ -12,7 +12,7 @@ from datetime import datetime
 from pathlib import Path
 from typing import Any, Dict, List
 
-from fastapi import BackgroundTasks, Depends, FastAPI, HTTPException, Request
+from fastapi import BackgroundTasks, Depends, FastAPI, HTTPException, Request, UploadFile, File
 from fastapi.responses import HTMLResponse, PlainTextResponse
 from fastapi.staticfiles import StaticFiles
 from fastapi.templating import Jinja2Templates
@@ -64,7 +64,13 @@ def run_detail(request: Request, run_id: str) -> HTMLResponse:
 
 @app.get("/api/definitions", response_model=List[CrawlerDefinitionResponse])
 def list_definitions(db: Session = Depends(get_db)):
-    return db.query(CrawlerDefinition).order_by(desc(CrawlerDefinition.created_at)).all()
+
+    org_id = request.headers.get("X-Organization-ID")
+    query = db.query(CrawlerDefinition)
+    if org_id:
+        query = query.filter(CrawlerDefinition.organization_id == org_id)
+    return query.order_by(desc(CrawlerDefinition.created_at)).all()
+
 
 
 @app.post("/api/definitions", response_model=CrawlerDefinitionResponse)
@@ -218,6 +224,60 @@ async def preview_crawler(definition: CrawlerDefinitionCreate):
             return {"findings": findings}
         except Exception as e:
             return {"findings": [{"name": f"Preview failed: {str(e)}", "business_type": "Error", "distance_miles": 0.0}]}
+
+
+@app.post("/api/resume/parse")
+async def parse_resume(file: UploadFile = File(...)):
+    content = await file.read()
+    # In a real app, use a library like PyPDF2 to extract text from PDF
+    # For now, we assume text or simple extraction
+    text = content.decode('utf-8', errors='ignore')
+    from webapp.app.enrichment import parse_resume_with_ai
+    profile = parse_resume_with_ai(text)
+
+    if profile:
+        profile_path = BASE_DIR / "webapp" / "app" / "data" / "default_profile.json"
+        profile_path.write_text(json.dumps(profile, indent=2))
+        return {"status": "success", "profile": profile}
+    return {"status": "error", "message": "Failed to parse resume"}
+
+
+@app.get("/api/runs/{run_id}/live")
+def get_live_findings(run_id: str, db: Session = Depends(get_db)):
+    """Return findings for a run as a live JSON API endpoint."""
+    run = db.get(CrawlRun, run_id)
+    if run is None: raise HTTPException(status_code=404, detail="Run not found")
+    findings = db.query(CrawlFinding).filter(CrawlFinding.run_id == run_id).all()
+    return {
+        "run_id": run.id,
+        "status": run.status,
+        "findings_count": len(findings),
+        "data": [
+            {
+                "name": f.name,
+                "type": f.business_type,
+                "website": f.website,
+                "email": f.email,
+                "phone": f.phone,
+                "location": f.location,
+                "ai_summary": f.ai_summary
+            } for f in findings
+        ]
+    }
+
+
+@app.get("/api/profiles")
+def list_profiles():
+    data_dir = BASE_DIR / "webapp" / "app" / "data"
+    profiles = [p.name for p in data_dir.glob("*.json")]
+    return {"profiles": profiles}
+
+@app.post("/api/profiles/{name}")
+async def save_profile(name: str, profile: Dict[str, Any]):
+    data_dir = BASE_DIR / "webapp" / "app" / "data"
+    profile_path = data_dir / f"{name}.json"
+    profile_path.write_text(json.dumps(profile, indent=2))
+    return {"status": "success"}
 
 # --- Schedules ---
 
