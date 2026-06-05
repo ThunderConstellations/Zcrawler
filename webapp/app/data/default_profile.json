@@ -20,7 +20,36 @@
     }
   ],
   "education": "B.S. in Computer Science, Purdue University",
-  "skills": ["Python", "JavaScript", "SQL", "Playwright", "Docker", "AWS"],
+  "skills": [
+    "Python",
+    "JavaScript",
+    "SQL",
+    "Playwright",
+    "Docker",
+    "AWS"
+  ],
   "visa_sponsorship_needed": "No",
-  "authorized_to_work_in_us": "Yes"
+  "authorized_to_work_in_us": "Yes",
+  "common_questions": {
+    "why_work_here": "I am passionate about the intersection of AI and automation.",
+    "years_of_experience": "5+",
+    "preferred_salary": "Competitive market rate"
+  },
+  "portfolio_links": {
+    "github": "https://github.com/johndoe",
+    "portfolio": "https://johndoe.dev",
+    "linkedin": "https://linkedin.com/in/johndoe"
+  },
+  "referral_contacts": [
+    {
+      "name": "Jane Smith",
+      "company": "Google",
+      "relation": "Former Colleague"
+    },
+    {
+      "name": "Bob Wilson",
+      "company": "Meta",
+      "relation": "University Alumni"
+    }
+  ]
 }

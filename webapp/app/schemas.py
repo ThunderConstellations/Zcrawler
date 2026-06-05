@@ -14,6 +14,7 @@ class CrawlerDefinitionBase(BaseModel):
     ai_prompt: Optional[str] = None
     webhook_url: Optional[str] = None
     config_json: str
+    is_template: bool = False
 
 
 class CrawlerDefinitionCreate(CrawlerDefinitionBase):
@@ -72,6 +73,9 @@ class CrawlRunResponse(BaseModel):
     started_at: Optional[datetime] = None
     completed_at: Optional[datetime] = None
     findings_count: int
+    progress: int = 0
+    status_message: Optional[str] = None
+    ai_fix_suggestion: Optional[str] = None
     error_message: Optional[str] = None
 
     class Config:

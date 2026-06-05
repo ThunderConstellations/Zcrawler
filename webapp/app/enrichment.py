@@ -218,3 +218,99 @@ def vision_extract_from_image(image_path: str, prompt: str) -> Optional[str]:
     except Exception as e:
         print(f"Vision API error: {e}")
         return None
+
+def analyze_sentiment(text: str) -> str:
+    """Analyze sentiment of a text using OpenRouter."""
+    if not text: return "Neutral"
+    api_key = get_api_key()
+    if not api_key: return "Neutral"
+
+    prompt = f"Analyze the sentiment of this text and return ONLY one word (Positive, Neutral, or Negative): {text}"
+    result = call_openrouter(prompt)
+    if result:
+        res = result.strip().lower()
+        if "positive" in res: return "Positive"
+        if "negative" in res: return "Negative"
+    return "Neutral"
+
+def clean_data_with_ai(data_json: str) -> str:
+    """Clean and format data using AI."""
+    api_key = get_api_key()
+    if not api_key: return data_json
+
+    prompt = f"Clean and format this business data JSON. Standardize phone numbers to +E.164 and deduplicate by name/location. Return ONLY the cleaned JSON: {data_json}"
+    result = call_openrouter(prompt)
+    if result:
+        start = result.find("[")
+        if start == -1: start = result.find("{")
+        end = result.rfind("]") + 1
+        if end == 0: end = result.rfind("}") + 1
+        return result[start:end]
+    return data_json
+
+def parse_resume_with_ai(resume_text: str) -> Dict[str, Any]:
+    """Parse resume text into a standard profile JSON."""
+    api_key = get_api_key()
+    if not api_key: return {}
+
+    prompt = f"Parse this resume text and extract full_name, email, phone, skills (list), and a short summary. Return ONLY valid JSON: {resume_text}"
+    result = call_openrouter(prompt)
+    if result:
+        start = result.find("{")
+        end = result.rfind("}") + 1
+        try:
+            return json.loads(result[start:end])
+        except:
+            pass
+    return {}
+
+def generate_cover_letter(profile_json: Dict, job_desc: str) -> str:
+    """Generate a tailored cover letter."""
+    api_key = get_api_key()
+    if not api_key: return "Cover letter generation failed (API Key missing)."
+
+    prompt = f"Write a professional and tailored cover letter for this job: {job_desc}\nUsing this user profile: {json.dumps(profile_json)}"
+    return call_openrouter(prompt) or "Failed to generate cover letter."
+
+def analyze_error_with_ai(log_tail: str, error_msg: str) -> str:
+    """Analyze run error and suggest a fix."""
+    api_key = get_api_key()
+    if not api_key: return "Ensure your API key is correct and check the site manually."
+
+    prompt = f"Analyze this crawler error and log snippet. Suggest a one-click fix or explanation for a non-technical user. Error: {error_msg}\nLog: {log_tail}"
+    return call_openrouter(prompt) or "The site layout might have changed or there is a temporary network issue."
+
+
+def extract_salary_range(html: str) -> Optional[str]:
+    """Extract salary range from job description HTML using AI."""
+    api_key = get_api_key()
+    if not api_key: return None
+
+    # Simple extraction attempt first
+    match = re.search(r'\$[0-9,]+.*-.*\$[0-9,]+', html)
+    if match: return match.group(0)
+
+    # Fallback to AI
+    prompt = f"Extract the annual salary range from this job description. Return ONLY the range (e.g. '$100k - $150k') or 'Not specified': {html[:5000]}"
+    return call_openrouter(prompt)
+
+
+def evaluate_semantic_change(old_data: str, new_data: str, alert_query: str) -> Optional[str]:
+    """Use AI to determine if a change is 'meaningful' based on a user query."""
+    api_key = get_api_key()
+    if not api_key: return None
+
+    prompt = f"""
+    Analyze these two versions of a business's data.
+    User Alert Query: {alert_query}
+
+    Old Version: {old_data}
+    New Version: {new_data}
+
+    Is this a meaningful change that the user should be alerted about?
+    Return 'NO' or a short explanation of the alert.
+    """
+    result = call_openrouter(prompt)
+    if result and "NO" not in result.upper():
+        return result.strip()
+    return None

@@ -23,12 +23,15 @@ class CrawlerDefinition(Base):
     id: Mapped[str] = mapped_column(String(36), primary_key=True, default=new_id)
     name: Mapped[str] = mapped_column(String(100), index=True)
     description: Mapped[str | None] = mapped_column(Text, nullable=True)
+    organization_id: Mapped[str | None] = mapped_column(String(36), index=True, nullable=True)
 
     template_key: Mapped[str] = mapped_column(String(100), index=True)
+    organization_id: Mapped[str | None] = mapped_column(String(36), index=True, nullable=True)
     recipe_type: Mapped[str | None] = mapped_column(String(100), nullable=True)
     ai_prompt: Mapped[str | None] = mapped_column(Text, nullable=True)
     webhook_url: Mapped[str | None] = mapped_column(Text, nullable=True)
     config_json: Mapped[str] = mapped_column(Text)
+    is_template: Mapped[bool] = mapped_column(Integer, default=0)
 
     created_at: Mapped[datetime] = mapped_column(
         DateTime, default=datetime.utcnow
@@ -50,6 +53,7 @@ class CrawlRun(Base):
         String(36), ForeignKey("crawler_definitions.id", ondelete="SET NULL"), nullable=True
     )
     template_key: Mapped[str] = mapped_column(String(100), index=True)
+    organization_id: Mapped[str | None] = mapped_column(String(36), index=True, nullable=True)
 
     status: Mapped[str] = mapped_column(String(30), index=True)
     error_message: Mapped[str | None] = mapped_column(Text, nullable=True)
@@ -63,6 +67,9 @@ class CrawlRun(Base):
     log_path: Mapped[str | None] = mapped_column(Text, nullable=True)
 
     findings_count: Mapped[int] = mapped_column(Integer, default=0)
+    progress: Mapped[int] = mapped_column(Integer, default=0)
+    status_message: Mapped[str | None] = mapped_column(Text, nullable=True)
+    ai_fix_suggestion: Mapped[str | None] = mapped_column(Text, nullable=True)
 
     created_at: Mapped[datetime] = mapped_column(
         DateTime, default=datetime.utcnow
@@ -102,6 +109,7 @@ class CrawlFinding(Base):
 
     # --- New Enrichment Fields ---
     description: Mapped[str | None] = mapped_column(Text, nullable=True)
+    organization_id: Mapped[str | None] = mapped_column(String(36), index=True, nullable=True)
     social_links: Mapped[str | None] = mapped_column(Text, nullable=True) # JSON string
     ai_summary: Mapped[str | None] = mapped_column(Text, nullable=True)
 
@@ -133,3 +141,16 @@ class SystemSetting(Base):
     key: Mapped[str] = mapped_column(String(50), primary_key=True)
     value: Mapped[str] = mapped_column(Text)
     updated_at: Mapped[datetime] = mapped_column(DateTime, default=datetime.utcnow, onupdate=datetime.utcnow)
+
+
+class FindingHistory(Base):
+    __tablename__ = "finding_history"
+
+    id: Mapped[int] = mapped_column(Integer, primary_key=True, autoincrement=True)
+    finding_id: Mapped[int] = mapped_column(Integer, ForeignKey("crawl_findings.id", ondelete="CASCADE"), index=True)
+
+    field_name: Mapped[str] = mapped_column(String(50))
+    old_value: Mapped[str | None] = mapped_column(Text, nullable=True)
+    new_value: Mapped[str | None] = mapped_column(Text, nullable=True)
+
+    created_at: Mapped[datetime] = mapped_column(DateTime, default=datetime.utcnow)
