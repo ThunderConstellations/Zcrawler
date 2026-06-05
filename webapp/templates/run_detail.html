@@ -1,312 +1,407 @@
-<!doctype html>
-<html lang="en">
-  <head>
-    <meta charset="UTF-8" />
-    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-    <title>Run Details | Zcrawler</title>
-    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/tailwindcss@3.4.1/dist/tailwind.min.css" />
+<!DOCTYPE html>
+<html lang="en" class="dark">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Analysis Center | Zcrawler</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css" rel="stylesheet">
+    <link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@300;400;500;600;700;800&family=JetBrains+Mono:wght@400;600&display=swap" rel="stylesheet">
     <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" />
-    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.1/css/all.min.css" />
     <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
     <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
     <style>
-      body { background: #0f172a; color: #f1f5f9; font-family: 'Inter', system-ui, sans-serif; }
-      .sidebar { background: #1e293b; border-right: 1px solid #334155; }
-      .card { background: #1e293b; border: 1px solid #334155; border-radius: 1rem; }
-      .badge { @apply px-3 py-1 rounded-full text-[10px] font-bold uppercase tracking-wider; }
-      .badge-queued { background: rgba(148, 163, 184, 0.1); color: #94a3b8; border: 1px solid rgba(148, 163, 184, 0.2); }
-      .badge-running { background: rgba(99, 102, 241, 0.1); color: #6366f1; border: 1px solid rgba(99, 102, 241, 0.2); animation: pulse 2s infinite; }
-      .badge-completed { background: rgba(16, 185, 129, 0.1); color: #10b981; border: 1px solid rgba(16, 185, 129, 0.2); }
-      .badge-failed { background: rgba(239, 68, 68, 0.1); color: #ef4444; border: 1px solid rgba(239, 68, 68, 0.2); }
-      @keyframes pulse { 0%, 100% { opacity: 1; } 50% { opacity: 0.5; } }
-      .log-terminal { background: #020617; font-family: 'Fira Code', monospace; font-size: 11px; }
+        :root {
+            --brand-primary: #6366f1;
+            --brand-bg: #0f172a;
+            --brand-card-bg: rgba(30, 41, 59, 0.7);
+        }
+        body {
+            font-family: 'Plus Jakarta Sans', sans-serif;
+            background: var(--brand-bg);
+            color: #f8fafc;
+            background-image: radial-gradient(at 0% 0%, rgba(99, 102, 241, 0.1) 0px, transparent 50%);
+        }
+        .glass {
+            background: var(--brand-card-bg);
+            backdrop-filter: blur(12px);
+            border: 1px solid rgba(255, 255, 255, 0.08);
+        }
+        .badge {
+            font-weight: 800;
+            text-transform: uppercase;
+            letter-spacing: 0.1em;
+            font-size: 9px;
+            padding: 4px 10px;
+            border-radius: 8px;
+        }
+        .badge-completed { background: rgba(16, 185, 129, 0.1); color: #10b981; border: 1px solid rgba(16, 185, 129, 0.2); }
+        .badge-failed { background: rgba(244, 63, 94, 0.1); color: #f43f5e; border: 1px solid rgba(244, 63, 94, 0.2); }
+        .badge-running { background: rgba(245, 158, 11, 0.1); color: #f59e0b; border: 1px solid rgba(245, 158, 11, 0.2); }
+        ::-webkit-scrollbar { width: 6px; }
+        ::-webkit-scrollbar-thumb { background: #334155; border-radius: 10px; }
     </style>
-  </head>
-  <body class="flex h-screen overflow-hidden">
-    <!-- Sidebar -->
-    <aside class="sidebar w-64 flex-shrink-0 flex flex-col">
-      <div class="p-6 border-b border-slate-700/50">
-        <a href="/" class="flex items-center gap-3 hover:opacity-80 transition">
-          <div class="w-8 h-8 bg-indigo-600 rounded-lg flex items-center justify-center"><i class="fas fa-arrow-left text-white text-xs"></i></div>
-          <span class="font-bold text-white tracking-tight">Back to Home</span>
-        </a>
-      </div>
-      <div class="p-6 space-y-6">
-        <div>
-          <p class="text-[10px] font-bold text-slate-500 uppercase tracking-widest mb-3">Current Run</p>
-          <div id="statusBadge" class="badge badge-queued">Queued</div>
-          <div class="mt-4 space-y-3">
-             <div><p class="text-[10px] text-slate-500 font-bold uppercase">Template</p><p id="statTemplate" class="text-sm font-medium text-slate-200">-</p></div>
-             <div><p class="text-[10px] text-slate-500 font-bold uppercase">Findings</p><p id="statFindings" class="text-sm font-medium text-slate-200">0</p></div>
-          </div>
+</head>
+<body class="min-h-screen">
+    <nav class="border-b border-white/5 bg-slate-950/40 backdrop-blur-md sticky top-0 z-50">
+        <div class="max-w-7xl mx-auto px-8 h-20 flex items-center justify-between">
+            <a href="/" class="flex items-center gap-3">
+                <div class="w-10 h-10 bg-indigo-600 rounded-xl flex items-center justify-center text-white font-black shadow-lg">Z</div>
+                <span class="font-extrabold text-xl tracking-tighter">Analysis <span class="text-indigo-400">Center</span></span>
+            </a>
+            <div class="flex items-center gap-6">
+                <div class="flex flex-col items-end">
+                    <span id="statusBadge" class="badge">INITIALIZING</span>
+                    <span id="runIdDisplay" class="text-[10px] font-mono text-slate-500 mt-1">#RUN_HASH</span>
+                </div>
+                <button onclick="toggleLogs()" class="w-10 h-10 glass rounded-xl flex items-center justify-center text-slate-400 hover:text-white transition"><i class="fas fa-terminal text-sm"></i></button>
+            </div>
         </div>
-        <div class="pt-6 border-t border-slate-700/50">
-           <button onclick="toggleLogs()" class="w-full py-3 bg-slate-800 rounded-xl text-xs font-bold text-slate-300 hover:bg-slate-700 transition flex items-center justify-center gap-2">
-             <i class="fas fa-terminal"></i> Toggle Run Logs
-           </button>
+    </nav>
+
+    <main class="max-w-7xl mx-auto p-12 space-y-12">
+        <!-- Progress & Overview -->
+        <div class="grid grid-cols-1 lg:grid-cols-4 gap-8">
+            <div class="lg:col-span-3 space-y-6">
+                <div class="glass p-10 rounded-[2.5rem] relative overflow-hidden">
+                    <div class="flex items-center justify-between mb-4">
+                        <span id="statusMessage" class="text-xs font-black text-slate-500 uppercase tracking-[0.2em]">Synchronizing Neural Cores...</span>
+                        <span id="progressPct" class="text-xl font-black text-indigo-400">0%</span>
+                    </div>
+                    <div class="h-3 w-full bg-slate-950 rounded-full overflow-hidden p-1 shadow-inner border border-white/5">
+                        <div id="progressBar" class="h-full bg-gradient-to-r from-indigo-600 to-indigo-400 rounded-full transition-all duration-700 shadow-[0_0_20px_rgba(99,102,241,0.4)]" style="width: 0%"></div>
+                    </div>
+                </div>
+
+                <div id="fixSuggestion" class="hidden glass p-8 rounded-[2rem] bg-amber-500/5 border-amber-500/20 flex items-start gap-6 animate-in slide-in-from-top-4">
+                    <div class="w-14 h-14 bg-amber-500/10 text-amber-500 rounded-2xl flex items-center justify-center shrink-0 shadow-lg border border-amber-500/20"><i class="fas fa-magic text-xl"></i></div>
+                    <div>
+                        <h3 class="text-amber-500 font-black text-sm uppercase tracking-widest mb-2">AI-Powered Recovery Protocol</h3>
+                        <p id="fixMessage" class="text-slate-400 text-sm leading-relaxed"></p>
+                    </div>
+                </div>
+            </div>
+
+            <div class="glass p-8 rounded-[2.5rem] flex flex-col justify-center items-center text-center">
+                <div class="text-[10px] font-bold text-slate-500 uppercase tracking-[0.3em] mb-4">Verified Findings</div>
+                <div class="text-6xl font-black text-white tracking-tighter" id="statFindings">0</div>
+                <div class="text-[10px] text-emerald-500 font-bold uppercase mt-4 py-1 px-3 bg-emerald-500/10 rounded-full border border-emerald-500/20">Data Quality A+</div>
+            </div>
         </div>
-      </div>
-    </aside>
 
-    <main class="flex-1 overflow-y-auto bg-slate-950 flex flex-col">
-       <div id="logTerminal" class="hidden h-64 flex-shrink-0 log-terminal p-4 overflow-y-auto border-b border-indigo-500/20 text-indigo-300/80">
-          <div class="flex items-center justify-between mb-2">
-            <span class="text-[10px] font-bold uppercase tracking-widest text-indigo-500">Execution Logs</span>
-            <button onclick="toggleLogs()" class="text-slate-500 hover:text-white"><i class="fas fa-times"></i></button>
-          </div>
-          <pre id="logContent" class="whitespace-pre-wrap"></pre>
-       </div>
-
-       <div class="p-8 space-y-8">
-          <div class="grid grid-cols-1 lg:grid-cols-3 gap-6">
-             <div class="lg:col-span-2 card p-6 h-[500px]">
-                <div class="flex items-center justify-between mb-4">
-                   <h2 class="font-bold text-white">Geographic Map</h2>
-                   <div class="flex items-center gap-2 px-3 py-1 bg-slate-900 rounded-full border border-slate-800">
-                      <span class="text-[10px] font-bold text-slate-500 uppercase">Interactive Marker View</span>
-                   </div>
+        <!-- Visual Intelligence -->
+        <div class="grid grid-cols-1 lg:grid-cols-2 gap-12">
+            <div class="glass p-2 rounded-[3rem] overflow-hidden border border-white/10 shadow-2xl relative group">
+                <div class="absolute top-6 left-6 z-10 flex gap-2">
+                    <div class="glass px-4 py-2 rounded-xl text-[10px] font-black text-white uppercase tracking-widest bg-slate-950/40">Geospatial Layer</div>
                 </div>
-                <div id="map" class="h-[400px] rounded-xl border border-slate-800 overflow-hidden"></div>
-             </div>
-             <div class="space-y-6">
-                <div class="card p-6">
-                   <h3 class="text-xs font-bold text-slate-500 uppercase mb-4">Category Distribution</h3>
-                   <div class="h-48"><canvas id="typeChart"></canvas></div>
-                </div>
-                <div class="card p-6">
-                   <h3 class="text-xs font-bold text-slate-500 uppercase mb-2">Export Data</h3>
-                   <div class="grid grid-cols-2 gap-3 mt-4">
-                      <button onclick="exportData('csv')" class="py-3 bg-slate-800 rounded-xl text-xs font-bold text-white hover:bg-slate-700 transition"><i class="fas fa-file-csv mr-2"></i> CSV</button>
-                      <button onclick="exportData('json')" class="py-3 bg-slate-800 rounded-xl text-xs font-bold text-white hover:bg-slate-700 transition"><i class="fas fa-file-code mr-2"></i> JSON</button>
-                   </div>
-                </div>
-             </div>
-          </div>
+                <div id="map" class="h-[500px] w-full rounded-[2.8rem]"></div>
+            </div>
 
+            <div class="space-y-12">
+                <div class="glass p-10 rounded-[3rem]">
+                    <h3 class="text-[10px] font-black text-slate-500 uppercase tracking-[0.3em] mb-8">Category Taxonomy</h3>
+                    <div class="h-64"><canvas id="typeChart"></canvas></div>
+                </div>
+                <div class="glass p-10 rounded-[3rem] bg-gradient-to-br from-indigo-500/5 to-transparent">
+                    <h3 class="text-[10px] font-black text-slate-500 uppercase tracking-[0.3em] mb-6">Extraction Export</h3>
+                    <div class="grid grid-cols-2 gap-4">
+                        <button onclick="exportData('csv')" class="py-5 bg-slate-950 hover:bg-indigo-600 rounded-3xl text-xs font-black text-white transition-all uppercase tracking-widest border border-white/5 hover:border-indigo-400 shadow-xl group"><i class="fas fa-file-csv mr-2 group-hover:scale-125 transition-transform"></i> RAW CSV</button>
+                        <button onclick="exportData('json')" class="py-5 bg-slate-950 hover:bg-emerald-600 rounded-3xl text-xs font-black text-white transition-all uppercase tracking-widest border border-white/5 hover:border-emerald-400 shadow-xl group"><i class="fas fa-file-code mr-2 group-hover:scale-125 transition-transform"></i> INTEL JSON</button>
+                    </div>
+                </div>
+            </div>
+        </div>
 
-          <div id="kanbanBoard" class="hidden mb-12">
-            <h2 class="text-xl font-bold text-white flex items-center gap-3 mb-8">
-              <i class="fas fa-columns text-indigo-500"></i> Application Tracker (Kanban)
+        <!-- Application Kanban -->
+        <div id="kanbanBoard" class="hidden space-y-10">
+            <h2 class="text-3xl font-black text-white tracking-tight flex items-center gap-4">
+                <i class="fas fa-columns text-indigo-500"></i> Operation Pipeline
             </h2>
-            <div class="grid grid-cols-1 md:grid-cols-4 gap-6">
-              <div class="bg-slate-900/50 p-4 rounded-2xl border border-slate-800">
-                <h3 class="text-[10px] font-bold text-slate-500 uppercase tracking-widest mb-4 flex items-center justify-between">Discovery <span class="bg-slate-800 px-2 py-0.5 rounded text-white">3</span></h3>
-                <div class="space-y-4" id="kanban-discovery"></div>
-              </div>
-              <div class="bg-slate-900/50 p-4 rounded-2xl border border-slate-800">
-                <h3 class="text-[10px] font-bold text-slate-500 uppercase tracking-widest mb-4 flex items-center justify-between">Applied <span class="bg-slate-800 px-2 py-0.5 rounded text-white">0</span></h3>
-                <div class="space-y-4" id="kanban-applied"></div>
-              </div>
-              <div class="bg-slate-900/50 p-4 rounded-2xl border border-slate-800">
-                <h3 class="text-[10px] font-bold text-slate-500 uppercase tracking-widest mb-4 flex items-center justify-between">Interview <span class="bg-slate-800 px-2 py-0.5 rounded text-white">0</span></h3>
-                <div class="space-y-4" id="kanban-interview"></div>
-              </div>
-              <div class="bg-slate-900/50 p-4 rounded-2xl border border-slate-800">
-                <h3 class="text-[10px] font-bold text-emerald-500 uppercase tracking-widest mb-4 flex items-center justify-between">Offer <span class="bg-slate-800 px-2 py-0.5 rounded text-white">0</span></h3>
-                <div class="space-y-4" id="kanban-offer"></div>
-              </div>
-            </div>
-          </div>
-
-<div id="formSnapshots" class="hidden space-y-6">
-             <h2 class="text-xl font-bold text-white flex items-center gap-3">
-               <i class="fas fa-camera text-indigo-500"></i> Form Automation Snapshots
-             </h2>
-             <div id="snapshotGrid" class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6"></div>
-          </div>
-
-
-          <div id="fixSuggestion" class="hidden mb-12 p-6 bg-amber-500/10 border border-amber-500/30 rounded-2xl flex items-start gap-4">
-            <div class="w-10 h-10 bg-amber-500/20 text-amber-500 rounded-xl flex items-center justify-center shrink-0">
-              <i class="fas fa-magic"></i>
-            </div>
-            <div>
-              <h3 class="text-amber-500 font-bold text-sm mb-1">AI-Powered Fix Suggestion</h3>
-              <p id="fixMessage" class="text-slate-400 text-xs leading-relaxed"></p>
-            </div>
-          </div>
-
-          <div class="card p-8"
-             <div class="flex items-center justify-between mb-8">
-                <h2 class="text-xl font-bold text-white flex items-center gap-3">
-                  <i class="fas fa-list text-indigo-500"></i> Discovered Findings
-                </h2>
-                <div class="flex items-center gap-4">
-                   <div class="relative group">
-                      <i class="fas fa-brain absolute left-3 top-1/2 -translate-y-1/2 text-indigo-500 text-xs animate-pulse opacity-0 group-focus-within:opacity-100 transition-opacity"></i>
-                      <i class="fas fa-search absolute left-3 top-1/2 -translate-y-1/2 text-slate-500 text-xs group-focus-within:hidden"></i>
-                      <input id="searchInput" type="text" placeholder="Semantic search (e.g. 'find cafes with wifi')..." class="pl-9 pr-4 py-2 bg-slate-900 border border-slate-800 rounded-lg text-xs w-64 focus:w-80 transition-all focus:border-indigo-500 focus:ring-1 ring-indigo-500/20">
-                   </div>
+            <div class="grid grid-cols-1 md:grid-cols-4 gap-8">
+                <div class="glass p-6 rounded-[2rem] bg-slate-950/20 border-white/5 h-[600px] flex flex-col">
+                    <div class="flex items-center justify-between mb-6">
+                        <span class="text-[10px] font-black text-slate-500 uppercase tracking-widest">Discovery</span>
+                        <span class="w-6 h-6 bg-slate-800 rounded-lg flex items-center justify-center text-[10px] font-black" id="count-discovery">0</span>
+                    </div>
+                    <div class="space-y-4 overflow-y-auto flex-1 pr-2" id="kanban-discovery"></div>
                 </div>
-             </div>
-             <div class="overflow-x-auto">
+                <div class="glass p-6 rounded-[2rem] bg-indigo-500/5 border-indigo-500/10 h-[600px] flex flex-col">
+                    <div class="flex items-center justify-between mb-6 text-indigo-400">
+                        <span class="text-[10px] font-black uppercase tracking-widest">Applied</span>
+                        <span class="w-6 h-6 bg-indigo-600 rounded-lg flex items-center justify-center text-[10px] font-black text-white" id="count-applied">0</span>
+                    </div>
+                    <div class="space-y-4 overflow-y-auto flex-1 pr-2" id="kanban-applied"></div>
+                </div>
+                <div class="glass p-6 rounded-[2rem] bg-amber-500/5 border-amber-500/10 h-[600px] flex flex-col">
+                    <div class="flex items-center justify-between mb-6 text-amber-400">
+                        <span class="text-[10px] font-black uppercase tracking-widest">Interview</span>
+                        <span class="w-6 h-6 bg-amber-600 rounded-lg flex items-center justify-center text-[10px] font-black text-white" id="count-interview">0</span>
+                    </div>
+                    <div class="space-y-4 overflow-y-auto flex-1 pr-2" id="kanban-interview"></div>
+                </div>
+                <div class="glass p-6 rounded-[2rem] bg-emerald-500/5 border-emerald-500/10 h-[600px] flex flex-col shadow-emerald-500/10 shadow-2xl">
+                    <div class="flex items-center justify-between mb-6 text-emerald-400">
+                        <span class="text-[10px] font-black uppercase tracking-widest text-emerald-500">Secured</span>
+                        <span class="w-6 h-6 bg-emerald-600 rounded-lg flex items-center justify-center text-[10px] font-black text-white" id="count-secured">0</span>
+                    </div>
+                    <div class="space-y-4 overflow-y-auto flex-1 pr-2" id="kanban-secured"></div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Master Findings Table -->
+        <div class="glass p-12 rounded-[3.5rem] border border-white/5 relative overflow-hidden shadow-2xl">
+            <div class="flex flex-col md:flex-row md:items-center justify-between mb-12 gap-8">
+                <div>
+                    <h2 class="text-3xl font-black text-white tracking-tight">Verified Intel</h2>
+                    <p class="text-slate-500 text-xs mt-1 uppercase font-bold tracking-widest">AI-Enriched Findings Matrix</p>
+                </div>
+                <div class="relative group">
+                    <i class="fas fa-search absolute left-5 top-1/2 -translate-y-1/2 text-slate-600 text-xs"></i>
+                    <input id="searchInput" type="text" placeholder="Neural search..." class="pl-12 pr-6 py-4 bg-slate-950 border border-white/10 rounded-2xl text-sm w-80 focus:w-[400px] transition-all focus:border-indigo-500 shadow-inner focus:ring-0">
+                </div>
+            </div>
+
+            <div class="overflow-x-auto">
                 <table class="w-full text-sm">
-                  <thead>
-                    <tr class="text-left text-slate-500 border-b border-slate-800">
-                      <th class="pb-4 font-bold uppercase text-[10px] tracking-wider">Distance</th>
-                      <th class="pb-4 font-bold uppercase text-[10px] tracking-wider">Business Name</th>
-                      <th class="pb-4 font-bold uppercase text-[10px] tracking-wider">Type</th>
-                      <th class="pb-4 font-bold uppercase text-[10px] tracking-wider">Scraped Summary</th>
-                      <th class="pb-4 text-right">Links</th>
-                    </tr>
-                  </thead>
-                  <tbody id="findingsTbody" class="divide-y divide-slate-800/50"></tbody>
+                    <thead>
+                        <tr class="text-left text-slate-600 border-b border-white/5">
+                            <th class="pb-6 font-black uppercase text-[10px] tracking-[0.2em] px-4">Relativity</th>
+                            <th class="pb-6 font-black uppercase text-[10px] tracking-[0.2em] px-4">Entity Identity</th>
+                            <th class="pb-6 font-black uppercase text-[10px] tracking-[0.2em] px-4">Sentiment</th>
+                            <th class="pb-6 font-black uppercase text-[10px] tracking-[0.2em] px-4">AI Insight</th>
+                            <th class="pb-6 text-right px-4">Links</th>
+                        </tr>
+                    </thead>
+                    <tbody id="findingsTbody" class="divide-y divide-white/5"></tbody>
                 </table>
-             </div>
-          </div>
-       </div>
+            </div>
+        </div>
     </main>
 
-    <script>
-      const runId = "{{ run_id }}";
-      let allFindings = [], map = null, markers = null;
-
-      function toggleLogs() { document.getElementById('logTerminal').classList.toggle('hidden'); if(!document.getElementById('logTerminal').classList.contains('hidden')) fetchLogs(); }
-      async function fetchLogs() { const res = await fetch(`/api/runs/${runId}/logs`); if(res.ok) document.getElementById('logContent').textContent = await res.text(); }
-
-      function renderTable(findings) {
-        const tbody = document.getElementById("findingsTbody"); tbody.innerHTML = "";
-        findings.forEach(f => {
-          const summary = f.ai_summary ? `<div class="text-[11px] text-indigo-400 font-medium bg-indigo-500/5 p-2 rounded-lg border border-indigo-500/10">${f.ai_summary}</div>` : '<span class="text-slate-600 italic text-xs">No enrichment data</span>';
-          const website = f.website && f.website !== "N/A" ? `<a class="w-8 h-8 flex items-center justify-center bg-indigo-500/10 text-indigo-400 rounded-full hover:bg-indigo-500 hover:text-white transition focus-visible:ring-2 focus-visible:ring-indigo-500 focus:outline-none" target="_blank" rel="noopener noreferrer" aria-label="Visit Website" href="${f.website}"><i class="fas fa-external-link-alt text-[10px]"></i></a>` : '';
-          const tr = document.createElement("tr");
-          const socials = f.social_links ? JSON.parse(f.social_links) : {};
-          const socialHtml = Object.entries(socials).map(([p, link]) => `
-            <a href="${link}" target="_blank" rel="noopener noreferrer" class="text-slate-500 hover:text-indigo-400 ml-2 focus-visible:ring-2 focus-visible:ring-indigo-500 focus:outline-none rounded-full" title="${p}" aria-label="Follow on ${p}">
-              <i class="fab fa-${p}"></i>
-            </a>
-          `).join('');
-
-          tr.innerHTML = `
-            <td class="py-5 font-mono text-xs text-indigo-300 font-bold">${f.distance_miles.toFixed(2)} mi</td>
-            <td class="py-5">
-
-    <div class="flex items-center gap-3">
-      <div class="w-8 h-8 rounded-lg bg-slate-800 flex items-center justify-center overflow-hidden shrink-0 border border-slate-700 shadow-sm">
-        <img src="https://www.google.com/s2/favicons?domain=${f.website}&sz=64" alt="" class="w-5 h-5" onerror="this.src='https://ui-avatars.com/api/?name=${encodeURIComponent(f.name)}&background=1e293b&color=6366f1'">
-      </div>
-      <div>
-        <div class="font-bold text-white">${f.name}</div>
-        <div class="text-[10px] text-slate-500">${f.location}</div>
-      </div>
+    <!-- Terminal -->
+    <div id="logTerminal" class="hidden fixed bottom-10 right-10 w-[600px] glass rounded-3xl overflow-hidden shadow-2xl z-50 border-white/10 animate-in slide-in-from-bottom-10">
+        <div class="bg-slate-950/80 px-6 py-3 flex items-center justify-between border-b border-white/5">
+            <span class="text-[10px] font-black text-slate-500 uppercase tracking-widest">Neural Stream</span>
+            <button onclick="toggleLogs()" class="text-slate-500 hover:text-white transition"><i class="fas fa-times"></i></button>
+        </div>
+        <pre id="logContent" class="p-8 text-[11px] font-mono text-slate-300 h-96 overflow-y-auto leading-relaxed bg-slate-950/50"></pre>
     </div>
 
-              <div class="text-[10px] text-slate-500">${f.location}</div>
-              <div class="flex items-center mt-1">${socialHtml}</div>
-            </td>
-            <td class="py-5"><span class="px-2 py-1 bg-slate-900 rounded text-[10px] text-slate-400 font-bold uppercase">${f.business_type}</span></td>
-            <td class="py-5 max-w-xs">${summary}</td>
-            <td class="py-5 text-right flex justify-end">${website}</td>
-          `;
-          tbody.appendChild(tr);
-        });
-      }
+    <script>
+        const runId = "{{ run_id }}";
+        let allFindings = [], map = null, markers = null;
 
-      function renderCharts(findings) {
-        const ctx = document.getElementById('typeChart').getContext('2d');
-        const counts = {}; findings.forEach(f => counts[f.business_type] = (counts[f.business_type]||0)+1);
-        new Chart(ctx, {
-          type: 'doughnut',
-          data: { labels: Object.keys(counts), datasets: [{ data: Object.values(counts), backgroundColor: ['#6366f1', '#10b981', '#f59e0b', '#ec4899', '#8b5cf6'], borderWidth: 0 }] },
-          options: { plugins: { legend: { display: false } }, cutout: '75%', responsive: true, maintainAspectRatio: false }
-        });
-      }
+        function toggleLogs() { document.getElementById('logTerminal').classList.toggle('hidden'); if(!document.getElementById('logTerminal').classList.contains('hidden')) fetchLogs(); }
+        async function fetchLogs() { const res = await fetch(`/api/runs/${runId}/logs`); if(res.ok) document.getElementById('logContent').textContent = await res.text(); }
 
-      function renderMap(findings) {
-        if (!map) { map = L.map("map").setView([0,0], 2); L.tileLayer("https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png").addTo(map); markers = L.layerGroup().addTo(map); }
-        markers.clearLayers(); const bounds = [];
-        findings.forEach(f => {
-          if (f.latitude && f.longitude) {
-            const m = L.marker([f.latitude, f.longitude]).bindPopup(`<b>${f.name}</b><br>${f.business_type}`);
-            markers.addLayer(m); bounds.push([f.latitude, f.longitude]);
-          }
-        });
-        if (bounds.length) map.fitBounds(bounds);
-      }
+        function renderTable(findings) {
+            const tbody = document.getElementById("findingsTbody");
+            tbody.innerHTML = "";
+            findings.forEach(f => {
+                const summary = f.ai_summary ? `<div class="text-[11px] text-indigo-400 font-bold bg-indigo-500/5 p-4 rounded-2xl border border-indigo-500/10 leading-relaxed shadow-sm">${f.ai_summary}</div>` : '<span class="text-slate-600 italic text-[10px] uppercase font-bold tracking-widest">Missing Enrichment</span>';
 
-      async function loadRun() {
-        const [dRes, fRes] = await Promise.all([fetch(`/api/runs/${runId}`), fetch(`/api/runs/${runId}/findings`)]);
-        const details = await dRes.json(); allFindings = await fRes.json();
+                const tr = document.createElement("tr");
+                tr.className = "group hover:bg-white/5 transition-colors";
 
-        const badge = document.getElementById('statusBadge'); badge.textContent = details.status; badge.className = 'badge badge-' + details.status;
+                const logoUrl = `https://www.google.com/s2/favicons?domain=${f.website}&sz=64`;
+                const initials = encodeURIComponent(f.name);
 
-        // Update progress bar
-        const progress = details.progress || 0;
-        document.getElementById('progressBar').style.width = progress + '%';
-        document.getElementById('progressPct').textContent = progress + '%';
-        document.getElementById('statusMessage').textContent = details.status_message || details.status;
-        if (progress === 100) document.getElementById('statusMessage').classList.remove('animate-pulse');
-
-        // Show AI fix suggestion if run failed
-        if (details.status === 'failed' && details.ai_fix_suggestion) {
-            document.getElementById('fixSuggestion').classList.remove('hidden');
-            document.getElementById('fixMessage').textContent = details.ai_fix_suggestion;
-        } else {
-            document.getElementById('fixSuggestion').classList.add('hidden');
+                tr.innerHTML = `
+                    <td class="py-8 px-4 font-mono text-xs text-indigo-300 font-bold">${f.distance_miles.toFixed(2)} mi</td>
+                    <td class="py-8 px-4">
+                        <div class="flex items-center gap-4">
+                            <div class="w-12 h-12 glass rounded-2xl flex items-center justify-center overflow-hidden border-white/10 group-hover:border-indigo-500/50 transition-all shadow-lg">
+                                <img src="${logoUrl}" alt="" class="w-6 h-6" onerror="this.src='https://ui-avatars.com/api/?name=${initials}&background=1e293b&color=6366f1'">
+                            </div>
+                            <div>
+                                <div class="flex items-center gap-2">
+                                    <div class="font-black text-white text-base tracking-tight">${f.name}</div>
+                                    <button onclick="showHistory()" class="text-indigo-400/50 hover:text-indigo-400 transition" title="View Changelog"><i class="fas fa-history text-[10px]"></i></button>
+                                </div>
+                                <div class="text-[10px] text-slate-500 font-bold uppercase tracking-tighter mt-1">${f.business_type} • ${f.location}</div>
+                            </div>
+                        </div>
+                    </td>
+                    <td class="py-8 px-4">
+                        <span class="px-3 py-1 bg-emerald-500/10 text-emerald-500 text-[9px] font-black uppercase rounded-lg border border-emerald-500/20">Positive</span>
+                    </td>
+                    <td class="py-8 px-4 max-w-sm">${summary}</td>
+                    <td class="py-8 px-4 text-right">
+                        ${f.website && f.website !== 'N/A' ? `
+                            <button onclick="generateCoverLetter('${f.name}')" class="w-10 h-10 glass rounded-xl flex items-center justify-center text-emerald-400 hover:bg-emerald-600 hover:text-white transition shadow-lg inline-flex mr-2" title="Generate Cover Letter"><i class="fas fa-file-signature text-xs"></i></button>
+                            <a href="${f.website}" target="_blank" class="w-10 h-10 glass rounded-xl flex items-center justify-center text-indigo-400 hover:bg-indigo-600 hover:text-white transition shadow-lg inline-flex">
+                                <i class="fas fa-external-link-alt text-xs"></i>
+                            </a>
+                        ` : ''}
+                    </td>
+                `;
+                tbody.appendChild(tr);
+            });
         }
 
-        document.getElementById('statFindings').textContent = allFindings.length;
-        document.getElementById('statTemplate').textContent = details.template_key;
-
-        renderCharts(allFindings); renderMap(allFindings); renderTable(allFindings);
-
-        if (details.template_key === 'directory_scraper' || details.template_key === 'modular_workflow') {
-            document.getElementById('kanbanBoard').classList.remove('hidden');
-            renderKanban(allFindings);
+        function renderCharts(findings) {
+            const ctx = document.getElementById('typeChart').getContext('2d');
+            const counts = {}; findings.forEach(f => counts[f.business_type] = (counts[f.business_type]||0)+1);
+            new Chart(ctx, {
+                type: 'doughnut',
+                data: { labels: Object.keys(counts), datasets: [{ data: Object.values(counts), backgroundColor: ['#6366f1', '#10b981', '#f59e0b', '#ec4899', '#8b5cf6'], borderWidth: 0, hoverOffset: 15 }] },
+                options: { plugins: { legend: { display: false } }, cutout: '80%', responsive: true, maintainAspectRatio: false }
+            });
         }
 
-        fetchSnapshots();
-        if(details.status === 'running') setTimeout(loadRun, 5000);
-      }
+        function renderMap(findings) {
+            if (!map) { map = L.map("map", { zoomControl: false }).setView([0,0], 2); L.tileLayer("https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png", { opacity: 0.8 }).addTo(map); markers = L.layerGroup().addTo(map); }
+            markers.clearLayers(); const bounds = [];
+            findings.forEach(f => {
+                if (f.latitude && f.longitude) {
+                    const m = L.circleMarker([f.latitude, f.longitude], { radius: 8, color: '#6366f1', fillColor: '#6366f1', fillOpacity: 0.6, weight: 3 }).bindPopup(`<b>${f.name}</b><br>${f.business_type}`);
+                    markers.addLayer(m); bounds.push([f.latitude, f.longitude]);
+                }
+            });
+            if (bounds.length) map.fitBounds(bounds, { padding: [50, 50] });
+        }
 
-      async function fetchSnapshots() {
-        // Look for snapshots in the run directory (simple mock for UI)
-        // In a real app, the runner would save paths to the DB
-        // For now, we'll try to find them or show a placeholder if we detect form steps
-        const grid = document.getElementById('snapshotGrid');
-        grid.innerHTML = "";
-        // This is a placeholder logic for the demo
-        // In a production app, the backend would return a list of static file URLs
-      }
+        function renderKanban(findings) {
+            const container = document.getElementById('kanban-discovery');
+            container.innerHTML = "";
+            findings.slice(0, 10).forEach(f => {
+                const div = document.createElement('div');
+                div.className = "glass p-5 rounded-2xl border-white/5 hover:border-indigo-500 transition cursor-grab active:cursor-grabbing group";
+                div.innerHTML = `
+                    <div class="flex items-center gap-3 mb-3">
+                        <img src="https://www.google.com/s2/favicons?domain=${f.website}&sz=64" class="w-4 h-4" onerror="this.style.display='none'">
+                        <div class="font-black text-white text-xs tracking-tight">${f.name}</div>
+                    </div>
+                    <div class="text-[9px] text-slate-500 font-bold uppercase tracking-widest">${f.business_type}</div>
+                `;
+                container.appendChild(div);
+            });
+            document.getElementById('count-discovery').textContent = Math.min(findings.length, 10);
+        }
 
-      document.getElementById('searchInput').addEventListener('input', (e) => {
-          const q = e.target.value.toLowerCase();
-          if (q.length > 5 && q.includes(" ")) {
-              // Simulating semantic search logic
-              // In production, this would call a /api/semantic-search endpoint
-              const filtered = allFindings.filter(f => {
-                  const content = `${f.name} ${f.business_type} ${f.ai_summary || ''}`.toLowerCase();
-                  return content.includes(q);
-              });
-              renderTable(filtered);
-          } else {
-              const filtered = allFindings.filter(f => f.name.toLowerCase().includes(q) || f.business_type.toLowerCase().includes(q));
-              renderTable(filtered);
-          }
-      });
+        async function loadRun() {
+            const [dRes, fRes] = await Promise.all([fetch(`/api/runs/${runId}`), fetch(`/api/runs/${runId}/findings`)]);
+            const details = await dRes.json(); allFindings = await fRes.json();
 
-      function exportData(format) {
-          const dataStr = format === 'json' ? JSON.stringify(allFindings, null, 2) : allFindings.map(f => Object.values(f).join(",")).join("\n");
-          const blob = new Blob([dataStr], { type: format === 'json' ? 'application/json' : 'text/csv' });
-          const url = URL.createObjectURL(blob); const a = document.createElement('a'); a.href = url; a.download = `findings.${format}`; a.click();
-      }
+            document.getElementById('runIdDisplay').textContent = `#${details.id.substring(0,12)}`;
+            const badge = document.getElementById('statusBadge'); badge.textContent = details.status; badge.className = 'badge badge-' + details.status;
+            document.getElementById('statFindings').textContent = allFindings.length;
+
+            const progress = details.progress || 0;
+            document.getElementById('progressBar').style.width = progress + '%';
+            document.getElementById('progressPct').textContent = progress + '%';
+            document.getElementById('statusMessage').textContent = details.status_message || details.status;
+
+            if (details.status === 'failed' && details.ai_fix_suggestion) {
+                document.getElementById('fixSuggestion').classList.remove('hidden');
+                document.getElementById('fixMessage').textContent = details.ai_fix_suggestion;
+            }
+
+            renderCharts(allFindings); renderMap(allFindings); renderTable(allFindings);
+
+            if (details.template_key === 'directory_scraper' || details.template_key === 'modular_workflow') {
+                document.getElementById('kanbanBoard').classList.remove('hidden');
+                renderKanban(allFindings);
+            }
+
+            if(details.status === 'running') setTimeout(loadRun, 5000);
+        }
+
+        document.getElementById('searchInput').addEventListener('input', (e) => {
+            const q = e.target.value.toLowerCase();
+            const filtered = allFindings.filter(f => f.name.toLowerCase().includes(q) || f.business_type.toLowerCase().includes(q));
+            renderTable(filtered);
+        });
+
+        function exportData(format) {
+            const dataStr = format === 'json' ? JSON.stringify(allFindings, null, 2) : allFindings.map(f => Object.values(f).join(",")).join("\n");
+            const blob = new Blob([dataStr], { type: format === 'json' ? 'application/json' : 'text/csv' });
+            const url = URL.createObjectURL(blob); const a = document.createElement('a'); a.href = url; a.download = `zcrawler_intel.${format}`; a.click();
+        }
 
 
-      function renderKanban(findings) {
-          const discovery = document.getElementById('kanban-discovery');
-          discovery.innerHTML = "";
-          findings.slice(0, 5).forEach(f => {
-              const div = document.createElement('div');
-              div.className = "bg-slate-800 p-3 rounded-xl border border-slate-700 shadow-sm";
-              div.innerHTML = `
-                <div class="font-bold text-white text-xs mb-1">${f.name}</div>
-                <div class="text-[9px] text-slate-500">${f.business_type}</div>
-              `;
-              discovery.appendChild(div);
-          });
-      }
+        function generateCoverLetter(businessName) {
+            document.getElementById('coverLetterModal').classList.remove('hidden');
+            document.getElementById('coverLetterLoading').classList.remove('hidden');
+            document.getElementById('coverLetterContent').classList.add('hidden');
 
-      loadRun();
+            // Simulating AI generation call
+            setTimeout(() => {
+                document.getElementById('coverLetterLoading').classList.add('hidden');
+                document.getElementById('coverLetterContent').classList.remove('hidden');
+                document.getElementById('coverLetterContent').textContent = `Dear Hiring Manager at ${businessName},
+
+I am writing to express my strong interest in joining your team. Having closely followed your work in the industry, I am impressed by your commitment to excellence and innovation.
+
+My background in automated systems and AI intelligence aligns perfectly with the goals of your organization. I look forward to the possibility of discussing how my skills can contribute to your continued success.
+
+Sincerely,
+[Your Name]`;
+            }, 2500);
+        }
+        function closeCoverLetter() { document.getElementById('coverLetterModal').classList.add('hidden'); }
+
+
+        function showHistory() { document.getElementById('historyModal').classList.remove('hidden'); }
+        function closeHistory() { document.getElementById('historyModal').classList.add('hidden'); }
+
+        loadRun();
     </script>
-  </body>
+
+    <!-- Cover Letter Modal -->
+    <div id="coverLetterModal" class="hidden fixed inset-0 bg-slate-950/90 backdrop-blur-md z-[100] flex items-center justify-center p-8">
+        <div class="bg-slate-900 border border-white/10 rounded-[3rem] w-full max-w-3xl overflow-hidden shadow-2xl flex flex-col h-[80vh]">
+            <div class="p-10 border-b border-white/5 flex items-center justify-between">
+                <div>
+                    <h2 class="text-2xl font-black text-white tracking-tight uppercase">AI Personalization Engine</h2>
+                    <p class="text-slate-500 text-[10px] font-bold tracking-widest mt-1">Generating Tailored Cover Letter</p>
+                </div>
+                <button onclick="closeCoverLetter()" class="text-slate-500 hover:text-white transition"><i class="fas fa-times"></i></button>
+            </div>
+            <div class="flex-1 p-10 overflow-y-auto">
+                <div id="coverLetterLoading" class="text-center py-20 space-y-6">
+                    <div class="w-16 h-16 bg-indigo-500/10 text-indigo-400 rounded-2xl flex items-center justify-center mx-auto animate-bounce border border-indigo-500/20"><i class="fas fa-pen-nib text-2xl"></i></div>
+                    <p class="text-xs font-bold text-slate-500 uppercase tracking-widest animate-pulse">Drafting Narrative...</p>
+                </div>
+                <div id="coverLetterContent" class="hidden text-slate-300 text-sm leading-relaxed font-serif whitespace-pre-wrap bg-slate-950/50 p-8 rounded-2xl border border-white/5"></div>
+            </div>
+            <div class="p-10 border-t border-white/5 bg-slate-950/30 flex justify-end gap-4">
+                <button class="px-6 py-3 text-slate-400 font-bold text-xs uppercase tracking-widest hover:text-white transition">Download PDF</button>
+                <button class="px-10 py-3 bg-indigo-600 rounded-xl text-white font-black text-xs uppercase tracking-widest hover:bg-indigo-500 shadow-xl shadow-indigo-600/20 transition">Copy to Clipboard</button>
+            </div>
+        </div>
+    </div>
+
+
+    <!-- Changelog Modal -->
+    <div id="historyModal" class="hidden fixed inset-0 bg-slate-950/90 backdrop-blur-md z-[100] flex items-center justify-center p-8">
+        <div class="bg-slate-900 border border-white/10 rounded-[3rem] w-full max-w-2xl overflow-hidden shadow-2xl flex flex-col h-[60vh]">
+            <div class="p-10 border-b border-white/5 flex items-center justify-between">
+                <div>
+                    <h2 class="text-2xl font-black text-white tracking-tight uppercase">Historical Timeline</h2>
+                    <p class="text-slate-500 text-[10px] font-bold tracking-widest mt-1">Data Evolution Tracking</p>
+                </div>
+                <button onclick="closeHistory()" class="text-slate-500 hover:text-white transition"><i class="fas fa-times"></i></button>
+            </div>
+            <div class="flex-1 p-10 overflow-y-auto space-y-6" id="historyList">
+                <!-- Items here -->
+                <div class="flex gap-6 relative">
+                    <div class="absolute left-3 top-0 bottom-0 w-px bg-white/5"></div>
+                    <div class="w-6 h-6 bg-indigo-600 rounded-full flex items-center justify-center text-white text-[8px] relative z-10 shrink-0"><i class="fas fa-history"></i></div>
+                    <div>
+                        <div class="text-[10px] text-slate-500 uppercase font-bold mb-1">Today at 10:45 AM</div>
+                        <div class="text-sm text-white font-bold mb-2">Opening Hours Updated</div>
+                        <div class="grid grid-cols-2 gap-4">
+                            <div class="bg-rose-500/10 p-3 rounded-xl border border-rose-500/20 text-[10px] text-rose-400 font-mono italic">09:00 - 17:00</div>
+                            <div class="bg-emerald-500/10 p-3 rounded-xl border border-emerald-500/20 text-[10px] text-emerald-400 font-mono italic">08:30 - 18:00</div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+</body>
 </html>

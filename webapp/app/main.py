@@ -1,17 +1,16 @@
 from __future__ import annotations
-"""FastAPI endpoints and HTML views for the Zcrawler webapp."""
 
-import shutil
-import os
 import asyncio
 import json
+import os
+import shutil
 import subprocess
-import sys
 import tempfile
 from datetime import datetime
 from pathlib import Path
-from typing import Any, Dict, List
+from typing import Any, Dict, List, Optional
 
+import httpx
 from fastapi import BackgroundTasks, Depends, FastAPI, HTTPException, Request, UploadFile, File
 from fastapi.responses import HTMLResponse, PlainTextResponse
 from fastapi.staticfiles import StaticFiles
@@ -21,7 +20,7 @@ from sqlalchemy.orm import Session
 
 from webapp.app.crawler_runner import execute_run, _script_command_for_osm, _script_command_for_directory, _load_findings
 from webapp.app.db import SessionLocal, get_db, init_db
-from webapp.app.models import CrawlFinding, CrawlRun, CrawlerDefinition, CrawlerSchedule, SystemSetting, new_id
+from webapp.app.models import CrawlFinding, CrawlRun, CrawlerDefinition, CrawlerSchedule, SystemSetting, FindingHistory, new_id
 from webapp.app.schemas import (
     CreateRunRequest,
     CrawlerDefinitionCreate,
@@ -63,14 +62,12 @@ def run_detail(request: Request, run_id: str) -> HTMLResponse:
 # --- Crawler Definitions ---
 
 @app.get("/api/definitions", response_model=List[CrawlerDefinitionResponse])
-def list_definitions(db: Session = Depends(get_db)):
-
+def list_definitions(request: Request, db: Session = Depends(get_db)):
     org_id = request.headers.get("X-Organization-ID")
     query = db.query(CrawlerDefinition)
     if org_id:
         query = query.filter(CrawlerDefinition.organization_id == org_id)
     return query.order_by(desc(CrawlerDefinition.created_at)).all()
-
 
 
 @app.post("/api/definitions", response_model=CrawlerDefinitionResponse)
@@ -278,6 +275,13 @@ async def save_profile(name: str, profile: Dict[str, Any]):
     profile_path = data_dir / f"{name}.json"
     profile_path.write_text(json.dumps(profile, indent=2))
     return {"status": "success"}
+
+
+@app.get("/api/alerts")
+def list_alerts(db: Session = Depends(get_db)):
+    # Simulating alert retrieval from finding_history
+    history = db.query(FindingHistory).order_by(desc(FindingHistory.created_at)).limit(10).all()
+    return history
 
 # --- Schedules ---
 
